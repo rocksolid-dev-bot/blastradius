@@ -24,7 +24,7 @@ separately visible signal, not a band.
 | semver jump — patch | `classifyJump` | **5** | raises risk |
 | semver jump — unsupported/unknown | `classifyJump` | **0** | no data to score |
 | files touching it | `usageMap.files.length` | **3 per file, capped at 20** | more files = more blast radius |
-| distinct symbols used | `usageMap.symbols.length` | **2 per symbol, capped at 15** | wider API surface = more to break |
+| distinct symbols used (+ default import) | `usageMap.symbols.length + (defaultImport ? 1 : 0)` | **2 per symbol, capped at 15** | wider API surface = more to break |
 | namespace import (`import * as x`) | `usageMap.namespaceImport` | **+10 flat** | whole-module use, harder to audit |
 | deprecated | registry `versions[latest].deprecated` | **+30 flat** | raises risk regardless of version distance |
 | type-only usage | `usageMap.typeOnly` | **×0.3 on the total** | lowers risk — compile-time only, nothing ships |
@@ -40,6 +40,15 @@ score = round(raw × typeOnlyMultiplier × devOnlyMultiplier)
 The two multipliers compose (a type-only *and* dev-only import gets ×0.15)
 because both are independently true statements about how little upgrading
 this dependency can break at runtime.
+
+**A default import counts as one symbol.** `import ts from "typescript"`
+is a real, deliberate use of the package's main export — treating it as
+zero API surface (the pre-day-4 behaviour) made a default-only consumer
+score identically to a package that is imported and never called. The
+`symbols` array itself is unchanged and stays documented as the list of
+*named* symbols only; `defaultImport` is a separate boolean that now feeds
+the same weight instead of being collected and never read. No new weight,
+no new field, no re-tuning of the other numbers.
 
 ## Bands
 
@@ -76,6 +85,12 @@ this dependency can break at runtime.
 - **Wildcard ranges (`*`, `latest`)** classify as `"unknown"` rather than
   assumed up to date — there's no fixed base version to diff against, and
   guessing would be worse than saying so.
+- **A default-import-only consumer must score strictly higher than the
+  same package with zero imports** — pinned by a fixture in
+  `test/scoring.test.ts`. Before this fix, `defaultImport` was recorded
+  by the usage map and never read by `scoring.ts`, so this repo's own
+  `typescript` import (`import ts from "typescript"`) reported `symbols:
+  []` and scored as if nothing used it.
 - **Weight I trust least: the `namespaceImport` flat +10.** It's a
   reasonable proxy for "harder to audit the blast radius" but it's the one
   signal here without a fixture pinning its exact contribution to a band

@@ -33,7 +33,7 @@ marker a consumer can check before parsing — it will not always be `1`.
 | `symbols` | `string[]` | Distinct named symbols imported from it, sorted |
 | `namespaceImport` | `boolean` | Whether any import uses `import * as x` |
 | `typeOnly` | `boolean` | True only when *every* import of this package is type-only |
-| `devOnly` | `boolean` | Same as `dev` today — see `usageMap.ts` for the file-level TODO |
+| `devOnly` | `boolean` | From the usage map when the package is imported anywhere; falls back to the declared `dev` flag when there is no usage entry (an unused devDependency must not report `devOnly: false`). File-level dev-only inference for a package imported from both prod and dev code is still a TODO — see `usageMap.ts`. Corrected in day 4: before this fix, an unused dep with no usage entry always reported `devOnly: false` regardless of `dev`, a contradiction inside this schema. **`schemaVersion` did not change** — the field's type and meaning are the same; this was a wrong value, not a new shape. |
 | `unused` | `boolean` | Declared but zero files import it — not scored, see `docs/scoring.md` |
 | `score` | `number` | Rounded integer; `0` when `unused` |
 | `band` | `"ok" \| "review" \| "urgent"` | See `docs/scoring.md` for thresholds |

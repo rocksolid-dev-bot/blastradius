@@ -1,0 +1,11 @@
+{
+  "name": "fixture-report-devonly-unused",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "left-pad": "^1.3.0"
+  },
+  "devDependencies": {
+    "unused-dev-tool": "^1.0.0"
+  }
+}

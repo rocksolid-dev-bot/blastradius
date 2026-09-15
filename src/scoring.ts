@@ -87,7 +87,8 @@ export function scoreDependency(input: ScoreInput): ScoreResult {
   const usage = input.usage;
   const jump = JUMP_WEIGHT[input.jump];
   const files = usage ? Math.min(usage.files.length * FILES_WEIGHT_PER_FILE, FILES_WEIGHT_CAP) : 0;
-  const symbols = usage ? Math.min(usage.symbols.length * SYMBOLS_WEIGHT_PER_SYMBOL, SYMBOLS_WEIGHT_CAP) : 0;
+  const symbolCount = usage ? usage.symbols.length + (usage.defaultImport ? 1 : 0) : 0;
+  const symbols = Math.min(symbolCount * SYMBOLS_WEIGHT_PER_SYMBOL, SYMBOLS_WEIGHT_CAP);
   const namespace = usage?.namespaceImport ? NAMESPACE_WEIGHT : 0;
   const deprecated = input.deprecated ? DEPRECATED_WEIGHT : 0;
 

@@ -11,6 +11,7 @@ const REGISTRY_DATA: Record<string, RegistryInfo> = {
   "left-pad": { latest: "1.5.0", deprecated: false, status: "ok" },
   "old-legacy": { latest: "2.0.0", deprecated: true, status: "ok" },
   "unused-dep": { latest: "2.4.0", deprecated: false, status: "ok" },
+  "unused-dev-tool": { latest: "1.1.0", deprecated: false, status: "ok" },
 };
 
 function fakeFetcher(): RegistryFetch {
@@ -65,5 +66,19 @@ describe("buildFullReport", () => {
       expect(dep.registryStatus).toBe("unknown");
       expect(dep.jump === "unknown" || dep.unused).toBe(true);
     }
+  });
+
+  it("never reports dev===true with devOnly===false for an unused devDependency", async () => {
+    const devOnlyFixtureDir = join(here, "fixtures", "report-devonly-unused");
+    const report = await buildFullReport(devOnlyFixtureDir, {
+      fetcher: fakeFetcher(),
+      registry: { cacheDir: join(devOnlyFixtureDir, ".cache-report-devonly-unused") },
+    });
+
+    const unusedDevTool = report.dependencies.find((d) => d.name === "unused-dev-tool")!;
+    expect(unusedDevTool.dev).toBe(true);
+    expect(unusedDevTool.unused).toBe(true);
+    expect(unusedDevTool.devOnly).toBe(unusedDevTool.dev);
+    expect(unusedDevTool.devOnly).toBe(true);
   });
 });

@@ -49,6 +49,25 @@ describe("scoreDependency", () => {
     expect(unused.score).not.toBe(used.score);
   });
 
+  it("scores a default-import-only consumer strictly higher than zero usage — defaultImport is a real symbol", () => {
+    const defaultOnly = scoreDependency({
+      jump: "patch",
+      deprecated: false,
+      declared: true,
+      usage: usage({ files: ["a.ts"], symbols: [], defaultImport: true }),
+    });
+    const noUsage = scoreDependency({
+      jump: "patch",
+      deprecated: false,
+      declared: true,
+      usage: usage({ files: ["a.ts"], symbols: [], defaultImport: false }),
+    });
+
+    expect(defaultOnly.score).toBeGreaterThan(noUsage.score);
+    expect(defaultOnly.breakdown.symbols).toBe(2); // 1 (default) * SYMBOLS_WEIGHT_PER_SYMBOL
+    expect(noUsage.breakdown.symbols).toBe(0);
+  });
+
   it("also flags a declared dependency with zero usage files as unused", () => {
     const result = scoreDependency({
       jump: "minor",

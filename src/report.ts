@@ -88,7 +88,11 @@ export async function buildFullReport(dir: string, options: BuildFullReportOptio
       symbols: packageUsage?.symbols ?? [],
       namespaceImport: packageUsage?.namespaceImport ?? false,
       typeOnly: packageUsage?.typeOnly ?? false,
-      devOnly: packageUsage?.devOnly ?? false,
+      // No usage entry means the dep is never imported; fall back to the
+      // declared-dependency `dev` flag rather than defaulting to `false`,
+      // otherwise an unused devDependency reports a contradiction:
+      // `dev: true` beside `devOnly: false` (see docs/json-schema.md).
+      devOnly: packageUsage?.devOnly ?? dep.dev,
       unused,
       score,
       band,
