@@ -91,7 +91,10 @@ no new field, no re-tuning of the other numbers.
   by the usage map and never read by `scoring.ts`, so this repo's own
   `typescript` import (`import ts from "typescript"`) reported `symbols:
   []` and scored as if nothing used it.
-- **Weight I trust least: the `namespaceImport` flat +10.** It's a
-  reasonable proxy for "harder to audit the blast radius" but it's the one
-  signal here without a fixture pinning its exact contribution to a band
-  crossing — see `STATUS.md` for the day-3 note.
+- **`namespaceImport` flat +10, pinned to a band crossing (day 4).** A
+  fixture in `test/scoring.test.ts` holds jump/files/symbols fixed at a
+  combined raw score of 19 (`ok`) and shows `namespaceImport: true` alone
+  moving it to 29 (`review`) — the +10 is exactly the difference between
+  the two bands in that fixture, not just "the score went up". This was
+  the one required weight without a boundary-crossing fixture through
+  day 3; it no longer is.

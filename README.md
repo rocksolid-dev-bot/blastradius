@@ -138,8 +138,8 @@ flagged `unused: true` and given `score: 0` instead of being scored — it's a f
 risk judgment.
 
 These weights are a defensible opinion, not a measurement — see the "why these numbers" section
-of `docs/scoring.md` for the reasoning behind each one, and which one (`namespaceImport`) is
-still the least pinned by a fixture.
+of `docs/scoring.md` for the reasoning behind each one. `namespaceImport`'s flat +10 is pinned to
+a real band crossing by a fixture in `test/scoring.test.ts` as of day 4.
 
 ## Exit codes
 

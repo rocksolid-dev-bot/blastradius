@@ -68,6 +68,33 @@ describe("scoreDependency", () => {
     expect(noUsage.breakdown.symbols).toBe(0);
   });
 
+  it("namespaceImport's flat +10 is exactly what pushes a score across the review boundary", () => {
+    // jump prerelease (10) + 1 file (3) + 3 symbols (6) = raw 19 -> "ok" (< 20).
+    // The only variable below is namespaceImport; +10 lands exactly on 29,
+    // crossing into "review" (>= 20). This pins the weight's contribution
+    // to a real band boundary, not just "the score went up".
+    const withoutNamespace = scoreDependency({
+      jump: "prerelease",
+      deprecated: false,
+      declared: true,
+      usage: usage({ files: ["a.ts"], symbols: ["x", "y", "z"], namespaceImport: false }),
+    });
+    const withNamespace = scoreDependency({
+      jump: "prerelease",
+      deprecated: false,
+      declared: true,
+      usage: usage({ files: ["a.ts"], symbols: ["x", "y", "z"], namespaceImport: true }),
+    });
+
+    expect(withoutNamespace.breakdown.namespace).toBe(0);
+    expect(withoutNamespace.score).toBe(19);
+    expect(withoutNamespace.band).toBe("ok");
+
+    expect(withNamespace.breakdown.namespace).toBe(10);
+    expect(withNamespace.score).toBe(29);
+    expect(withNamespace.band).toBe("review");
+  });
+
   it("also flags a declared dependency with zero usage files as unused", () => {
     const result = scoreDependency({
       jump: "minor",
