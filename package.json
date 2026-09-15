@@ -1,0 +1,26 @@
+{
+  "name": "blastradius",
+  "version": "0.1.0",
+  "description": "Rank outdated npm/pnpm/yarn dependencies by blast radius, not alphabet.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "blastradius": "dist/cli.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.ts",
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "start": "node dist/cli.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}
