@@ -3,23 +3,48 @@ import { resolve } from "node:path";
 import { buildDryReport, formatDryReport } from "./dry.js";
 import { buildFullReport, type BuildFullReportOptions } from "./report.js";
 import { formatTable } from "./table.js";
+import { detectMonorepoMarker } from "./monorepo.js";
+import type { Band } from "./scoring.js";
 
 const HELP = `blastradius — rank outdated dependencies by blast radius, not alphabet
 
 Usage:
-  blastradius [dir]           Ranked table: registry + usage + score (npm only, for now)
-  blastradius --json [dir]    Same report as machine-readable JSON on stdout
-  blastradius --dry [dir]     Print declared vs. installed versions only, no registry call
-  blastradius --help          Show this help and exit
+  blastradius [dir]                    Ranked table: registry + usage + score (npm only, for now)
+  blastradius --json [dir]             Same report as machine-readable JSON on stdout
+  blastradius --dry [dir]              Print declared vs. installed versions only, no registry call
+  blastradius --fail-on <band> [dir]   Exit 1 if any dependency scores at or above <band> (review|urgent)
+  blastradius --root-only [dir]        Monorepo escape hatch: analyze the root package.json only
+  blastradius --help                   Show this help and exit
 
 [dir] defaults to the current directory. Registry lookups are cached for 24h
 in $XDG_CACHE_HOME/blastradius (or ~/.cache/blastradius); a lookup that
 fails for any reason (offline, timeout, 429/5xx, bad body) renders as
 "unknown" rather than crashing the run.
+
+A workspace root (\`workspaces\` in package.json, pnpm-workspace.yaml, or
+lerna.json) is refused by default — half-support produces a confidently
+wrong answer. Pass --root-only to analyze the root package.json alone.
+
+Exit codes:
+  0  success — --fail-on's band was not reached (or --fail-on was not given)
+  1  --fail-on's band was reached by at least one dependency
+  2  usage error — unknown flag, invalid --fail-on value, or no package.json found
+  3  monorepo detected and refused (see --root-only)
 `;
 
+const BAND_RANK: Record<Band, number> = { ok: 0, review: 1, urgent: 2 };
+const KNOWN_FLAGS = new Set(["--json", "--dry", "--help", "-h", "--fail-on", "--root-only"]);
+
 function firstNonFlag(args: string[]): string | undefined {
-  return args.find((a) => !a.startsWith("-"));
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]!;
+    if (a === "--fail-on") {
+      i++; // skip the value that belongs to --fail-on
+      continue;
+    }
+    if (!a.startsWith("-")) return a;
+  }
+  return undefined;
 }
 
 /**
@@ -27,26 +52,70 @@ function firstNonFlag(args: string[]): string | undefined {
  * the ranked table or `--json`. Exported so tests can drive it directly
  * with an injected registry fetcher — the CLI never hits the network in
  * this suite.
+ *
+ * `failOn` composes with `jsonMode`: the JSON document is still the only
+ * thing on stdout, and the exit code reflects whether `failOn`'s band was
+ * reached, printing the offending package names to stderr so a red CI run
+ * says why without anyone re-running it locally.
  */
 export async function runReport(
   dir: string,
   jsonMode: boolean,
-  options: BuildFullReportOptions = {},
+  options: BuildFullReportOptions & { failOn?: Band; rootOnly?: boolean } = {},
 ): Promise<number> {
-  try {
-    const report = await buildFullReport(dir, options);
-    if (jsonMode) {
-      // Machine mode: stdout carries nothing but the JSON document.
-      process.stdout.write(`${JSON.stringify(report)}\n`);
-    } else {
-      process.stdout.write(`${formatTable(report.dependencies, process.stdout.columns)}\n`);
+  const { failOn, rootOnly, ...reportOptions } = options;
+
+  if (!rootOnly) {
+    const marker = detectMonorepoMarker(dir);
+    if (marker) {
+      process.stderr.write(
+        `blastradius: refusing to run — monorepo marker found (${marker}).\n` +
+          `Workspace packages are not analyzed yet; a workspace root's package.json\n` +
+          `lists almost no real dependencies and would print a near-empty, misleading\n` +
+          `table. Pass --root-only to analyze the root package.json alone.\n`,
+      );
+      return 3;
     }
-    return 0;
+  } else {
+    process.stdout.write("note: --root-only — analyzing the root package.json only, not any workspace packages\n");
+  }
+
+  let report;
+  try {
+    report = await buildFullReport(dir, reportOptions);
   } catch (err) {
+    const nodeErr = err as NodeJS.ErrnoException;
+    if (nodeErr?.code === "ENOENT") {
+      process.stderr.write(
+        `blastradius: no package.json (or npm lockfile) found in ${dir}${nodeErr.path ? ` (${nodeErr.path})` : ""}\n`,
+      );
+      return 2;
+    }
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(`blastradius failed: ${message}\n`);
     return 1;
   }
+
+  if (jsonMode) {
+    // Machine mode: stdout carries nothing but the JSON document.
+    process.stdout.write(`${JSON.stringify(report)}\n`);
+  } else {
+    process.stdout.write(`${formatTable(report.dependencies, process.stdout.columns)}\n`);
+  }
+
+  if (failOn) {
+    const threshold = BAND_RANK[failOn];
+    const offenders = report.dependencies.filter((d) => !d.unused && BAND_RANK[d.band] >= threshold);
+    if (offenders.length > 0) {
+      process.stderr.write(
+        `blastradius: --fail-on ${failOn} — ${offenders.length} dependency(ies) at or above "${failOn}": ` +
+          `${offenders.map((d) => `${d.name} (${d.band})`).join(", ")}\n`,
+      );
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 export async function run(argv: string[]): Promise<number> {
@@ -55,6 +124,13 @@ export async function run(argv: string[]): Promise<number> {
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
     process.stdout.write(HELP);
     return 0;
+  }
+
+  for (const a of args) {
+    if (a.startsWith("-") && !KNOWN_FLAGS.has(a)) {
+      process.stderr.write(`blastradius: unknown flag ${a}\n`);
+      return 2;
+    }
   }
 
   if (args[0] === "--dry") {
@@ -71,9 +147,22 @@ export async function run(argv: string[]): Promise<number> {
   }
 
   const jsonMode = args.includes("--json");
+  const rootOnly = args.includes("--root-only");
+
+  let failOn: Band | undefined;
+  const failOnIndex = args.indexOf("--fail-on");
+  if (failOnIndex !== -1) {
+    const value = args[failOnIndex + 1];
+    if (value !== "review" && value !== "urgent") {
+      process.stderr.write(`blastradius: invalid --fail-on value ${value ?? "(missing)"} — expected "review" or "urgent"\n`);
+      return 2;
+    }
+    failOn = value;
+  }
+
   const dirArg = firstNonFlag(args);
   const dir = resolve(dirArg ?? process.cwd());
-  return runReport(dir, jsonMode);
+  return runReport(dir, jsonMode, failOn ? { failOn, rootOnly } : { rootOnly });
 }
 
 // Only run as a side effect when invoked directly (`node cli.js` / the

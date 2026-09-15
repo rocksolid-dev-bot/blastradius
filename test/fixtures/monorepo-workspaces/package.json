@@ -1,0 +1,9 @@
+{
+  "name": "fixture-monorepo-root",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "dependencies": {
+    "left-pad": "^1.3.0"
+  }
+}
