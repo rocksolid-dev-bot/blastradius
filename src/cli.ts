@@ -4,6 +4,7 @@ import { buildDryReport, formatDryReport } from "./dry.js";
 import { buildFullReport, type BuildFullReportOptions } from "./report.js";
 import { formatTable } from "./table.js";
 import { detectMonorepoMarker } from "./monorepo.js";
+import { detectLockfileManager, UnsupportedLockfileError } from "./lockfile/index.js";
 import type { Band } from "./scoring.js";
 
 const HELP = `blastradius — rank outdated dependencies by blast radius, not alphabet
@@ -84,10 +85,17 @@ export async function runReport(
   try {
     report = await buildFullReport(dir, reportOptions);
   } catch (err) {
+    if (err instanceof UnsupportedLockfileError) {
+      // A recognised-but-unreadable lockfile (wrong version, berry, etc.) is
+      // a usage error, not a crash: the message already names the file and
+      // the version/shape found, so it is printed verbatim.
+      process.stderr.write(`blastradius: ${err.message}\n`);
+      return 2;
+    }
     const nodeErr = err as NodeJS.ErrnoException;
     if (nodeErr?.code === "ENOENT") {
       process.stderr.write(
-        `blastradius: no package.json (or npm lockfile) found in ${dir}${nodeErr.path ? ` (${nodeErr.path})` : ""}\n`,
+        `blastradius: no package.json (or lockfile) found in ${dir}${nodeErr.path ? ` (${nodeErr.path})` : ""}\n`,
       );
       return 2;
     }
@@ -97,10 +105,13 @@ export async function runReport(
   }
 
   if (jsonMode) {
-    // Machine mode: stdout carries nothing but the JSON document.
+    // Machine mode: stdout carries nothing but the JSON document. The
+    // detected manager is presentation only (see table below) and stays
+    // out of the JSON shape — schemaVersion is unchanged at 1.
     process.stdout.write(`${JSON.stringify(report)}\n`);
   } else {
-    process.stdout.write(`${formatTable(report.dependencies, process.stdout.columns)}\n`);
+    const manager = detectLockfileManager(dir);
+    process.stdout.write(`${formatTable(report.dependencies, process.stdout.columns, manager)}\n`);
   }
 
   if (failOn) {

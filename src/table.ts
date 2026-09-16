@@ -30,9 +30,18 @@ function row(dep: DependencyReport): string[] {
  * dependency. Pads columns to content width, bounded by the terminal width
  * when known (falls back to a sane minimum for a non-TTY pipe).
  */
-export function formatTable(dependencies: DependencyReport[], terminalWidth?: number): string {
+export function formatTable(
+  dependencies: DependencyReport[],
+  terminalWidth?: number,
+  lockfileManager?: string | null,
+): string {
+  // Named once, above the header, when the caller knows which lockfile was
+  // read (`detectLockfileManager`). Presentation only — the JSON schema
+  // does not carry this; see docs/json-schema.md.
+  const managerLine = lockfileManager ? `lockfile: ${lockfileManager}\n` : "";
+
   if (dependencies.length === 0) {
-    return `${HEADER.join("  ")}\n(no dependencies declared)`;
+    return `${managerLine}${HEADER.join("  ")}\n(no dependencies declared)`;
   }
 
   const rows = dependencies.map(row);
@@ -58,5 +67,5 @@ export function formatTable(dependencies: DependencyReport[], terminalWidth?: nu
       .join("  ");
   }
 
-  return [fmt(HEADER), ...rows.map(fmt)].join("\n");
+  return `${managerLine}${[fmt(HEADER), ...rows.map(fmt)].join("\n")}`;
 }

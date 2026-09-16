@@ -1,0 +1,3 @@
+# some future yarn.lock format that names neither v1 classic nor berry
+left-pad@^1.3.0:
+  resolved-version: 1.3.0

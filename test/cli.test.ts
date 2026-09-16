@@ -98,4 +98,38 @@ describe("runReport --json", () => {
     expect(chunks.join("")).toContain("old-legacy");
     expect(() => JSON.parse(chunks[0]!)).toThrow();
   });
+
+  it("names the detected lockfile manager in the table header", async () => {
+    const chunks: string[] = [];
+    vi.spyOn(process.stdout, "write").mockImplementation((chunk: unknown) => {
+      chunks.push(typeof chunk === "string" ? chunk : chunk!.toString());
+      return true;
+    });
+
+    await runReport(fixtureDir, false, {
+      fetcher,
+      registry: { cacheDir: join(fixtureDir, ".cache-cli-manager") },
+    });
+
+    expect(chunks.join("")).toContain("lockfile: npm");
+  });
+});
+
+describe("runReport lockfile refusal", () => {
+  it("exits 2 and names the file and version when the lockfile is recognised but unreadable", async () => {
+    const stderrChunks: string[] = [];
+    vi.spyOn(process.stderr, "write").mockImplementation((chunk: unknown) => {
+      stderrChunks.push(typeof chunk === "string" ? chunk : chunk!.toString());
+      return true;
+    });
+    vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+
+    const pnpmUnsupportedDir = join(here, "fixtures", "pnpm-unsupported-version");
+    const code = await runReport(pnpmUnsupportedDir, false, { fetcher });
+
+    expect(code).toBe(2);
+    const stderr = stderrChunks.join("");
+    expect(stderr).toContain("pnpm-lock.yaml");
+    expect(stderr).toContain("5.0");
+  });
 });

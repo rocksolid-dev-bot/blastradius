@@ -51,6 +51,16 @@ describe("formatTable", () => {
     expect(out).toContain("unused");
   });
 
+  it("names the detected lockfile manager above the header when given one", () => {
+    const out = formatTable([dep()], undefined, "pnpm");
+    expect(out.split("\n")[0]).toBe("lockfile: pnpm");
+  });
+
+  it("omits the manager line entirely when none is given", () => {
+    const out = formatTable([dep()]);
+    expect(out).not.toContain("lockfile:");
+  });
+
   it("shrinks the package column rather than overflow a narrow terminal", () => {
     const longName = "@some-very-long-organization-scope/an-extremely-long-package-name";
     const out = formatTable([dep({ name: longName })], 60);

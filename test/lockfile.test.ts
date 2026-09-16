@@ -3,9 +3,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildDryReport } from "../src/dry.js";
 import { readNpmLockfile } from "../src/lockfile/npm.js";
+import { readPnpmLockfile } from "../src/lockfile/pnpm.js";
+import { readYarnLockfile } from "../src/lockfile/yarn.js";
+import { detectLockfileManager, readLockfile, UnsupportedLockfileError } from "../src/lockfile/index.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtureDir = join(here, "fixtures", "npm-basic");
+const pnpmFixtureDir = join(here, "fixtures", "pnpm-basic");
+const yarnFixtureDir = join(here, "fixtures", "yarn-basic");
 
 describe("readNpmLockfile", () => {
   it("resolves top-level installed versions from an npm lockfileVersion 3 file", () => {
@@ -23,5 +28,89 @@ describe("buildDryReport", () => {
       { name: "left-pad", range: "^1.3.0", installed: "1.3.0", dev: false },
       { name: "typescript", range: "^5.4.0", installed: "5.4.5", dev: true },
     ]);
+  });
+});
+
+describe("readPnpmLockfile", () => {
+  it("resolves top-level installed versions from a real pnpm v9 lockfile, same map shape as npm", () => {
+    const installed = readPnpmLockfile(pnpmFixtureDir);
+    expect(installed.get("left-pad")).toBe("1.3.0");
+    expect(installed.get("typescript")).toBe("5.9.3");
+    expect(installed.size).toBe(2);
+  });
+
+  it("strips the peer-dep suffix from a resolved version", () => {
+    const installed = readPnpmLockfile(join(here, "fixtures", "pnpm-peer-suffix"));
+    expect(installed.get("some-plugin")).toBe("2.0.0");
+  });
+
+  it("refuses an unsupported pnpm lockfile version, naming the file and the version", () => {
+    let thrown: unknown;
+    try {
+      readPnpmLockfile(join(here, "fixtures", "pnpm-unsupported-version"));
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeInstanceOf(UnsupportedLockfileError);
+    const message = (thrown as Error).message;
+    expect(message).toContain("pnpm-lock.yaml");
+    expect(message).toContain("5.0");
+  });
+});
+
+describe("readYarnLockfile", () => {
+  it("resolves top-level installed versions from a real yarn classic v1 lockfile, same map shape as npm", () => {
+    const installed = readYarnLockfile(yarnFixtureDir);
+    expect(installed.get("left-pad")).toBe("1.3.0");
+    expect(installed.get("typescript")).toBe("5.9.3");
+    expect(installed.size).toBe(2);
+  });
+
+  it("refuses a yarn berry lockfile explicitly, naming the file", () => {
+    let thrown: unknown;
+    try {
+      readYarnLockfile(join(here, "fixtures", "yarn-berry"));
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeInstanceOf(UnsupportedLockfileError);
+    const message = (thrown as Error).message;
+    expect(message).toContain("yarn.lock");
+    expect(message).toContain("berry");
+  });
+
+  it("refuses an unrecognised yarn.lock shape rather than guessing", () => {
+    let thrown: unknown;
+    try {
+      readYarnLockfile(join(here, "fixtures", "yarn-unrecognized"));
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeInstanceOf(UnsupportedLockfileError);
+    expect((thrown as Error).message).toContain("yarn.lock");
+  });
+});
+
+describe("detectLockfileManager", () => {
+  it("detects npm, pnpm, and yarn by the lockfile file present", () => {
+    expect(detectLockfileManager(fixtureDir)).toBe("npm");
+    expect(detectLockfileManager(pnpmFixtureDir)).toBe("pnpm");
+    expect(detectLockfileManager(yarnFixtureDir)).toBe("yarn");
+  });
+
+  it("returns null when no lockfile is present", () => {
+    expect(detectLockfileManager(join(here, "fixtures"))).toBeNull();
+  });
+});
+
+describe("readLockfile selector", () => {
+  it("dispatches to the pnpm reader when only a pnpm lockfile is present", () => {
+    const installed = readLockfile(pnpmFixtureDir);
+    expect(installed.get("left-pad")).toBe("1.3.0");
+  });
+
+  it("dispatches to the yarn reader when only a yarn lockfile is present", () => {
+    const installed = readLockfile(yarnFixtureDir);
+    expect(installed.get("left-pad")).toBe("1.3.0");
   });
 });

@@ -1,0 +1,20 @@
+lockfileVersion: '9.0'
+
+importers:
+
+  .:
+    dependencies:
+      some-plugin:
+        specifier: ^2.0.0
+        version: 2.0.0(react@18.0.0)
+
+packages:
+
+  some-plugin@2.0.0(react@18.0.0):
+    resolution: {integrity: sha512-0000000000000000000000000000000000000000000000000000000000000000000000000000000000000A==}
+    peerDependencies:
+      react: ^18.0.0
+
+snapshots:
+
+  some-plugin@2.0.0(react@18.0.0): {}

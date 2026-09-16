@@ -1,0 +1,8 @@
+{
+  "name": "fixture-pnpm-peer-suffix",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "some-plugin": "^2.0.0"
+  }
+}
