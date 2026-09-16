@@ -1,19 +1,23 @@
 # blastradius
 
-Ranks outdated npm dependencies by how much of your code actually touches them, not
-alphabetically and not by version-jump size alone.
+Ranks outdated dependencies by how much of your code actually touches them, not
+alphabetically and not by version-jump size alone. Reads npm, pnpm, and yarn classic
+lockfiles.
 
 ## Output
 
-Run against this repo's own `package.json`:
+Run against this repo's own `package.json` (npm lockfile — note the detected manager
+named above the table):
 
 ```
 $ blastradius .
+lockfile: npm
 package      declared  installed  latest   jump    files  score  band  
 vitest       ^2.0.0    2.1.9      5.0.1    major   10     37     review
 typescript   ^5.5.0    5.9.3      7.0.2    major   1      23     review
 @types/node  ^20.14.0  20.19.43   22.20.3  unused  0      0      ok    
 tsx          ^4.16.0   4.23.13    4.23.13  unused  0      0      ok    
+(exit 0)
 ```
 
 `vitest` and `typescript` are both a major version behind and are actually imported (10 files
@@ -24,6 +28,7 @@ As CI would see it:
 
 ```
 $ blastradius --fail-on review .
+lockfile: npm
 package      declared  installed  latest   jump    files  score  band  
 vitest       ^2.0.0    2.1.9      5.0.1    major   10     37     review
 typescript   ^5.5.0    5.9.3      7.0.2    major   1      23     review
@@ -33,9 +38,10 @@ blastradius: --fail-on review — 2 dependency(ies) at or above "review": vitest
 (exit 1)
 ```
 
-Full captured session — table, `--json` excerpt, `--fail-on`, `--help` — is in
-[`media/2026-09-16-day4.txt`](media/2026-09-16-day4.txt). Every output block on this page is
-pasted from that file, not retyped.
+Full captured session — table, `--json` excerpt, `--fail-on`, `--help`, the monorepo refusal,
+`--root-only`, and a pnpm-detected run — is in
+[`media/2026-09-16-day5.txt`](media/2026-09-16-day5.txt). Every output block on this page is
+pasted from that file, none retyped.
 
 ## Install
 
@@ -52,10 +58,11 @@ Needs Node `>=18` (`engines` in `package.json`). Built and tested on Node 18.19.
 ## Usage
 
 ```
+$ blastradius --help
 blastradius — rank outdated dependencies by blast radius, not alphabet
 
 Usage:
-  blastradius [dir]                    Ranked table: registry + usage + score (npm only, for now)
+  blastradius [dir]                    Ranked table: registry + usage + score (npm, pnpm, or yarn classic)
   blastradius --json [dir]             Same report as machine-readable JSON on stdout
   blastradius --dry [dir]              Print declared vs. installed versions only, no registry call
   blastradius --fail-on <band> [dir]   Exit 1 if any dependency scores at or above <band> (review|urgent)
@@ -70,6 +77,13 @@ fails for any reason (offline, timeout, 429/5xx, bad body) renders as
 A workspace root (`workspaces` in package.json, pnpm-workspace.yaml, or
 lerna.json) is refused by default — half-support produces a confidently
 wrong answer. Pass --root-only to analyze the root package.json alone.
+
+Exit codes:
+  0  success — --fail-on's band was not reached (or --fail-on was not given)
+  1  --fail-on's band was reached by at least one dependency
+  2  usage error — unknown flag, invalid --fail-on value, or no package.json found
+  3  monorepo detected and refused (see --root-only)
+(exit 0)
 ```
 
 ### `--json`
@@ -77,10 +91,12 @@ wrong answer. Pass --root-only to analyze the root package.json alone.
 Same report, one JSON document on stdout and nothing else:
 
 ```json
-{"schemaVersion":1,"dependencies":[{"name":"vitest","declared":"^2.0.0","installed":"2.1.9","latest":"5.0.1","registryStatus":"ok","deprecated":false,"jump":"major","dev":true,"files":["test/cli.test.ts","test/failon-monorepo.test.ts","test/lockfile.test.ts", ...
+{"schemaVersion":1,"dependencies":[{"name":"vitest","declared":"^2.0.0","installed":"2.1.9","latest":"5.0.1","registryStatus":"ok","deprecated":false,"jump":"major","dev":true,"files":["test/cli.test.ts","test/failon-monorepo.test.ts","test/lockfile.test.ts","test/registry.test.ts","test/report.test.ts","test/scoring.test.ts","test/semver.test.ts","test/table.test.ts","test/usageMap.test.ts","vitest.config.ts"],"symbols":["afterEach","beforeEach","defineConfig","describe","expect","it","vi"],"namespaceImport":false,"typeOnly":false,"devOnly":true,"unused":false,"score":37,"band":"review"},{"name":"typescript","declared":"^5.5.0","installed":"5.9.3","latest":"7.0.2","registryStatus":"ok","dep
 ```
 
-Full field-by-field schema: [`docs/json-schema.md`](docs/json-schema.md).
+`schemaVersion` is `1` and does not carry the detected lockfile manager — that's presentation
+only (see the table header above), not part of the machine-readable shape. Full field-by-field
+schema: [`docs/json-schema.md`](docs/json-schema.md).
 
 ### `--fail-on <review|urgent>`
 
@@ -89,25 +105,46 @@ threshold is *at or above* — `--fail-on review` also fails on `urgent`, `--fai
 not fail on a `review`. Composes with `--json`: the exit code reflects `--fail-on`, stdout still
 carries exactly the one JSON document. Full exit-code table below.
 
-### `--root-only`
+### `--root-only` and monorepo refusal
 
 A monorepo (`workspaces` in `package.json`, `pnpm-workspace.yaml`, or `lerna.json`) is refused by
 default, because a workspace root's own `package.json` lists almost no real dependencies and
 this tool would print a confidently near-empty table for what might be a large repo:
 
 ```
-$ blastradius .
+$ blastradius test/fixtures/monorepo-workspaces
 blastradius: refusing to run — monorepo marker found (package.json workspaces field).
 Workspace packages are not analyzed yet; a workspace root's package.json
 lists almost no real dependencies and would print a near-empty, misleading
 table. Pass --root-only to analyze the root package.json alone.
 (exit 3)
 
-$ blastradius --root-only .
+$ blastradius --root-only test/fixtures/monorepo-workspaces
 note: --root-only — analyzing the root package.json only, not any workspace packages
+lockfile: npm
 package   declared  installed  latest  jump   files  score  band  
 left-pad  ^1.3.0    1.3.0      1.3.0   patch  1      40     review
+(exit 0)
 ```
+
+### pnpm and yarn
+
+Detection is by which lockfile is present (`package-lock.json` → npm, `pnpm-lock.yaml` → pnpm,
+`yarn.lock` → yarn classic — that priority order when more than one exists). The detected
+manager is named above the table, as shown here against a pnpm project:
+
+```
+$ blastradius test/fixtures/pnpm-basic
+lockfile: pnpm
+package     declared  installed  latest  jump    files  score  band
+left-pad    ^1.3.0    1.3.0      1.3.0   unused  0      0      ok  
+typescript  ^5.4.0    5.9.3      7.0.2   unused  0      0      ok  
+(exit 0)
+```
+
+Yarn classic (`# yarn lockfile v1`) works the same way. Yarn berry (`__metadata:` block) and any
+pnpm `lockfileVersion` outside 6.x/9.x are refused explicitly (exit `2`, naming the file and the
+version/shape found) rather than half-parsed on a guess.
 
 ## Scoring
 
@@ -147,7 +184,7 @@ a real band crossing by a fixture in `test/scoring.test.ts` as of day 4.
 |---|---|
 | `0` | Success — `--fail-on` not given, or given and not reached |
 | `1` | `--fail-on <band>` was given and reached |
-| `2` | Usage error — unknown flag, invalid `--fail-on` value, or no `package.json`/lockfile found |
+| `2` | Usage error — unknown flag, invalid `--fail-on` value, no `package.json`/lockfile found, or a lockfile that is recognised but unreadable (naming the file and the version/shape found) |
 | `3` | Monorepo refused — see `--root-only` |
 
 Full detail: [`docs/exit-codes.md`](docs/exit-codes.md).
@@ -169,11 +206,15 @@ Full detail: [`docs/exit-codes.md`](docs/exit-codes.md).
 - **No monorepo/workspace analysis.** A `workspaces` field, `pnpm-workspace.yaml`, or
   `lerna.json` gets refused (exit `3`); `--root-only` analyzes the root `package.json` alone,
   nothing under `packages/`.
-- **npm lockfiles only.** pnpm and yarn are behind the same `LockfileReader` interface but have
-  no reader implemented yet.
+- **npm, pnpm, and yarn classic (v1) lockfiles are read; yarn berry is refused by name.**
+  Berry's `__metadata:` shape is detected and rejected explicitly (exit `2`) rather than
+  half-parsed — it was cut this cycle to keep classic-plus-pnpm solid rather than guess at a
+  third shape untested.
 - **No transitive analysis.** One level — direct dependencies only. A vulnerable dependency of a
   dependency does not show up here.
 - **No CVE/advisory data, no automatic upgrades, no non-JS ecosystems.**
+- **No workspace-package-level detection of which manager a monorepo's sub-packages use** — the
+  manager named above the table is whichever lockfile sits in the analyzed directory itself.
 - **The scoring weights are a defensible opinion, not a measurement** — see `docs/scoring.md` for
   the reasoning and the one weight (`namespaceImport`) that still lacks a fixture pinning its
   exact contribution across a band boundary.

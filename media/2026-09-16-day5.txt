@@ -1,0 +1,70 @@
+$ blastradius .
+lockfile: npm
+package      declared  installed  latest   jump    files  score  band  
+vitest       ^2.0.0    2.1.9      5.0.1    major   10     37     review
+typescript   ^5.5.0    5.9.3      7.0.2    major   1      23     review
+@types/node  ^20.14.0  20.19.43   22.20.3  unused  0      0      ok    
+tsx          ^4.16.0   4.23.13    4.23.13  unused  0      0      ok    
+(exit 0)
+
+$ blastradius --json . | head -c 700
+{"schemaVersion":1,"dependencies":[{"name":"vitest","declared":"^2.0.0","installed":"2.1.9","latest":"5.0.1","registryStatus":"ok","deprecated":false,"jump":"major","dev":true,"files":["test/cli.test.ts","test/failon-monorepo.test.ts","test/lockfile.test.ts","test/registry.test.ts","test/report.test.ts","test/scoring.test.ts","test/semver.test.ts","test/table.test.ts","test/usageMap.test.ts","vitest.config.ts"],"symbols":["afterEach","beforeEach","defineConfig","describe","expect","it","vi"],"namespaceImport":false,"typeOnly":false,"devOnly":true,"unused":false,"score":37,"band":"review"},{"name":"typescript","declared":"^5.5.0","installed":"5.9.3","latest":"7.0.2","registryStatus":"ok","dep
+(exit 0)
+
+$ blastradius --fail-on review .
+lockfile: npm
+package      declared  installed  latest   jump    files  score  band  
+vitest       ^2.0.0    2.1.9      5.0.1    major   10     37     review
+typescript   ^5.5.0    5.9.3      7.0.2    major   1      23     review
+@types/node  ^20.14.0  20.19.43   22.20.3  unused  0      0      ok    
+tsx          ^4.16.0   4.23.13    4.23.13  unused  0      0      ok    
+blastradius: --fail-on review — 2 dependency(ies) at or above "review": vitest (review), typescript (review)
+(exit 1)
+
+$ blastradius --help
+blastradius — rank outdated dependencies by blast radius, not alphabet
+
+Usage:
+  blastradius [dir]                    Ranked table: registry + usage + score (npm, pnpm, or yarn classic)
+  blastradius --json [dir]             Same report as machine-readable JSON on stdout
+  blastradius --dry [dir]              Print declared vs. installed versions only, no registry call
+  blastradius --fail-on <band> [dir]   Exit 1 if any dependency scores at or above <band> (review|urgent)
+  blastradius --root-only [dir]        Monorepo escape hatch: analyze the root package.json only
+  blastradius --help                   Show this help and exit
+
+[dir] defaults to the current directory. Registry lookups are cached for 24h
+in $XDG_CACHE_HOME/blastradius (or ~/.cache/blastradius); a lookup that
+fails for any reason (offline, timeout, 429/5xx, bad body) renders as
+"unknown" rather than crashing the run.
+
+A workspace root (`workspaces` in package.json, pnpm-workspace.yaml, or
+lerna.json) is refused by default — half-support produces a confidently
+wrong answer. Pass --root-only to analyze the root package.json alone.
+
+Exit codes:
+  0  success — --fail-on's band was not reached (or --fail-on was not given)
+  1  --fail-on's band was reached by at least one dependency
+  2  usage error — unknown flag, invalid --fail-on value, or no package.json found
+  3  monorepo detected and refused (see --root-only)
+(exit 0)
+
+$ blastradius test/fixtures/monorepo-workspaces
+blastradius: refusing to run — monorepo marker found (package.json workspaces field).
+Workspace packages are not analyzed yet; a workspace root's package.json
+lists almost no real dependencies and would print a near-empty, misleading
+table. Pass --root-only to analyze the root package.json alone.
+(exit 3)
+
+$ blastradius --root-only test/fixtures/monorepo-workspaces
+note: --root-only — analyzing the root package.json only, not any workspace packages
+lockfile: npm
+package   declared  installed  latest  jump   files  score  band  
+left-pad  ^1.3.0    1.3.0      1.3.0   patch  1      40     review
+(exit 0)
+
+$ blastradius test/fixtures/pnpm-basic
+lockfile: pnpm
+package     declared  installed  latest  jump    files  score  band
+left-pad    ^1.3.0    1.3.0      1.3.0   unused  0      0      ok  
+typescript  ^5.4.0    5.9.3      7.0.2   unused  0      0      ok  
+(exit 0)

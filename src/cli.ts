@@ -10,7 +10,7 @@ import type { Band } from "./scoring.js";
 const HELP = `blastradius — rank outdated dependencies by blast radius, not alphabet
 
 Usage:
-  blastradius [dir]                    Ranked table: registry + usage + score (npm only, for now)
+  blastradius [dir]                    Ranked table: registry + usage + score (npm, pnpm, or yarn classic)
   blastradius --json [dir]             Same report as machine-readable JSON on stdout
   blastradius --dry [dir]              Print declared vs. installed versions only, no registry call
   blastradius --fail-on <band> [dir]   Exit 1 if any dependency scores at or above <band> (review|urgent)
