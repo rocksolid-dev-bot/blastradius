@@ -19,6 +19,26 @@ describe("readNpmLockfile", () => {
     expect(installed.get("typescript")).toBe("5.4.5");
     expect(installed.size).toBe(2);
   });
+
+  it("resolves the same name->version map shape from an npm lockfileVersion 2 file", () => {
+    const installed = readNpmLockfile(join(here, "fixtures", "npm-v2-basic"));
+    expect(installed.get("left-pad")).toBe("1.3.0");
+    expect(installed.get("typescript")).toBe("5.4.5");
+    expect(installed.size).toBe(2);
+  });
+
+  it("refuses an npm lockfileVersion 1 file by name, naming the file and the version", () => {
+    let thrown: unknown;
+    try {
+      readNpmLockfile(join(here, "fixtures", "npm-v1-lockfile"));
+    } catch (err) {
+      thrown = err;
+    }
+    expect(thrown).toBeInstanceOf(UnsupportedLockfileError);
+    const message = (thrown as Error).message;
+    expect(message).toContain("package-lock.json");
+    expect(message).toContain("1");
+  });
 });
 
 describe("buildDryReport", () => {

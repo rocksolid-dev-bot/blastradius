@@ -151,6 +151,14 @@ export async function run(argv: string[]): Promise<number> {
       process.stdout.write(`${formatDryReport(rows)}\n`);
       return 0;
     } catch (err) {
+      if (err instanceof UnsupportedLockfileError) {
+        // Same refusal family as the default/`--json` path (see runReport):
+        // a recognised-but-unreadable lockfile is a usage error, not a
+        // crash, and the message already names the file and the
+        // version/shape found.
+        process.stderr.write(`blastradius: ${err.message}\n`);
+        return 2;
+      }
       const message = err instanceof Error ? err.message : String(err);
       process.stderr.write(`blastradius --dry failed: ${message}\n`);
       return 1;

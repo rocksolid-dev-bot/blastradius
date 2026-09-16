@@ -1,0 +1,67 @@
+=== npm-v1-lockfile — default ===
+$ blastradius test/fixtures/npm-v1-lockfile
+blastradius: Unsupported npm lockfile version: 1 (package-lock.json). lockfileVersion 2 or 3 is supported (npm 7+); run `npm install` with npm 7 or newer to upgrade the lockfile.
+exit=2
+
+=== npm-v1-lockfile — --json ===
+$ blastradius --json test/fixtures/npm-v1-lockfile
+blastradius: Unsupported npm lockfile version: 1 (package-lock.json). lockfileVersion 2 or 3 is supported (npm 7+); run `npm install` with npm 7 or newer to upgrade the lockfile.
+exit=2
+
+=== npm-v1-lockfile — --dry ===
+$ blastradius --dry test/fixtures/npm-v1-lockfile
+blastradius: Unsupported npm lockfile version: 1 (package-lock.json). lockfileVersion 2 or 3 is supported (npm 7+); run `npm install` with npm 7 or newer to upgrade the lockfile.
+exit=2
+
+=== pnpm-unsupported-version — default ===
+$ blastradius test/fixtures/pnpm-unsupported-version
+blastradius: Unsupported pnpm lockfile version: 5.0 (pnpm-lock.yaml). Only lockfileVersion 6.x and 9.x are supported today.
+exit=2
+
+=== pnpm-unsupported-version — --json ===
+$ blastradius --json test/fixtures/pnpm-unsupported-version
+blastradius: Unsupported pnpm lockfile version: 5.0 (pnpm-lock.yaml). Only lockfileVersion 6.x and 9.x are supported today.
+exit=2
+
+=== pnpm-unsupported-version — --dry ===
+$ blastradius --dry test/fixtures/pnpm-unsupported-version
+blastradius: Unsupported pnpm lockfile version: 5.0 (pnpm-lock.yaml). Only lockfileVersion 6.x and 9.x are supported today.
+exit=2
+
+=== yarn-berry — default ===
+$ blastradius test/fixtures/yarn-berry
+blastradius: Unsupported yarn lockfile format: yarn.lock carries a berry "__metadata:" block. Only classic yarn lockfile v1 is supported today; yarn berry is refused explicitly, not guessed at.
+exit=2
+
+=== yarn-berry — --json ===
+$ blastradius --json test/fixtures/yarn-berry
+blastradius: Unsupported yarn lockfile format: yarn.lock carries a berry "__metadata:" block. Only classic yarn lockfile v1 is supported today; yarn berry is refused explicitly, not guessed at.
+exit=2
+
+=== yarn-berry — --dry ===
+$ blastradius --dry test/fixtures/yarn-berry
+blastradius: Unsupported yarn lockfile format: yarn.lock carries a berry "__metadata:" block. Only classic yarn lockfile v1 is supported today; yarn berry is refused explicitly, not guessed at.
+exit=2
+
+=== yarn-unrecognized — default ===
+$ blastradius test/fixtures/yarn-unrecognized
+blastradius: Unrecognised yarn.lock format: no "# yarn lockfile v1" header and no berry "__metadata:" block found (yarn.lock). Refusing rather than guessing at an unknown shape.
+exit=2
+
+=== yarn-unrecognized — --json ===
+$ blastradius --json test/fixtures/yarn-unrecognized
+blastradius: Unrecognised yarn.lock format: no "# yarn lockfile v1" header and no berry "__metadata:" block found (yarn.lock). Refusing rather than guessing at an unknown shape.
+exit=2
+
+=== yarn-unrecognized — --dry ===
+$ blastradius --dry test/fixtures/yarn-unrecognized
+blastradius: Unrecognised yarn.lock format: no "# yarn lockfile v1" header and no berry "__metadata:" block found (yarn.lock). Refusing rather than guessing at an unknown shape.
+exit=2
+
+=== npm-v2-basic — default (successful read, item 2) ===
+$ blastradius test/fixtures/npm-v2-basic
+lockfile: npm
+package     declared  installed  latest  jump    files  score  band
+left-pad    ^1.3.0    1.3.0      1.3.0   unused  0      0      ok  
+typescript  ^5.4.0    5.4.5      7.0.2   unused  0      0      ok  
+exit=0

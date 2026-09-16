@@ -8,7 +8,7 @@ failing a build. `--fail-on` is what turns this into a CI gate.
 |---|---|
 | `0` | Success. Either `--fail-on` was not given, or it was given and nothing reached the named band. |
 | `1` | `--fail-on <band>` was given and at least one dependency's score is at or above that band. The offending package names and bands are printed to stderr. |
-| `2` | Usage error: an unknown flag, an invalid `--fail-on` value (anything other than `review` or `urgent`), no `package.json`/lockfile found in the target directory, or a lockfile that is recognised but unreadable (an npm lockfile that isn't `lockfileVersion: 3`, a pnpm lockfile outside the supported 6.x/9.x majors, or a yarn berry/unrecognised `yarn.lock`) — the message names the file and the version/shape found. |
+| `2` | Usage error: an unknown flag, an invalid `--fail-on` value (anything other than `review` or `urgent`), no `package.json`/lockfile found in the target directory, or a lockfile that is recognised but unreadable (an npm lockfile with a `lockfileVersion` outside 2 and 3, a pnpm lockfile outside the supported 6.x/9.x majors, or a yarn berry/unrecognised `yarn.lock`) — the message names the file and the version/shape found. |
 | `3` | Monorepo refusal — a `workspaces` field in `package.json`, `pnpm-workspace.yaml`, or `lerna.json` was found and `--root-only` was not passed. See `--root-only` to analyze the root `package.json` alone. |
 
 ## `--fail-on`
