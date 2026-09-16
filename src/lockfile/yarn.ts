@@ -1,0 +1,80 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import type { LockfileReader } from "./types.js";
+import { UnsupportedLockfileError } from "./types.js";
+
+const CLASSIC_HEADER_RE = /^# yarn lockfile v1/m;
+const BERRY_METADATA_RE = /^__metadata:/m;
+
+function unquoteWhole(value: string): string {
+  const t = value.trim();
+  if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
+    return t.slice(1, -1);
+  }
+  return t;
+}
+
+/**
+ * The package name out of one specifier, e.g. `left-pad@^1.3.0` ->
+ * `left-pad`, `@babel/core@^7.0.0` -> `@babel/core`. A scoped package's own
+ * leading `@` is not the version separator, so for those the search starts
+ * after it.
+ */
+function packageNameFromSpecifier(spec: string): string {
+  const s = spec.trim();
+  const searchFrom = s.startsWith("@") ? 1 : 0;
+  const at = s.indexOf("@", searchFrom);
+  return at === -1 ? s : s.slice(0, at);
+}
+
+/**
+ * Reads a classic yarn v1 `yarn.lock` and returns package name -> resolved
+ * version for every entry. One entry may declare several comma-separated
+ * specifiers for the same resolved package — only the first is needed to
+ * recover the name.
+ *
+ * Refuses explicitly (throws `UnsupportedLockfileError`) rather than
+ * guessing when the file carries a berry `__metadata:` block, or matches
+ * neither the classic header nor berry's marker.
+ */
+export const readYarnLockfile: LockfileReader = (dir) => {
+  const lockPath = join(dir, "yarn.lock");
+  const raw = readFileSync(lockPath, "utf8");
+
+  if (BERRY_METADATA_RE.test(raw)) {
+    throw new UnsupportedLockfileError(
+      `Unsupported yarn lockfile format: yarn.lock carries a berry "__metadata:" block. ` +
+        "Only classic yarn lockfile v1 is supported today; yarn berry is refused explicitly, not guessed at.",
+    );
+  }
+  if (!CLASSIC_HEADER_RE.test(raw)) {
+    throw new UnsupportedLockfileError(
+      `Unrecognised yarn.lock format: no "# yarn lockfile v1" header and no berry "__metadata:" block found ` +
+        "(yarn.lock). Refusing rather than guessing at an unknown shape.",
+    );
+  }
+
+  const lines = raw.split("\n");
+  const installed = new Map<string, string>();
+  let currentName: string | null = null;
+
+  for (const line of lines) {
+    if (line.trim() === "" || line.startsWith("#")) continue;
+    if (!/^\s/.test(line)) {
+      // A new entry key line: `left-pad@^1.3.0:` or `"@a/b@^1.0.0, @a/b@^1.2.0":`.
+      const m = /^(.+):\s*$/.exec(line);
+      const wholeKey = m ? unquoteWhole(m[1]!) : null;
+      const firstSpecifier = wholeKey?.split(",")[0];
+      currentName = firstSpecifier ? packageNameFromSpecifier(firstSpecifier) : null;
+      continue;
+    }
+    if (currentName) {
+      const m = /^\s*version\s+"?([^"\s]+)"?\s*$/.exec(line);
+      if (m) {
+        installed.set(currentName, m[1]!);
+        currentName = null;
+      }
+    }
+  }
+  return installed;
+};
