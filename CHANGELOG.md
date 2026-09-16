@@ -4,6 +4,26 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.1] - 2026-09-17
+
+### Fixed
+
+- **Refusal exit codes on the `--dry` and npm paths.** Two of the three documented
+  exit-`2` refusal paths actually exited `1`: `cli.ts`'s `--dry` branch had its own
+  `try/catch` that had never heard of `UnsupportedLockfileError`, and `src/lockfile/npm.ts`
+  predated the shared error class and threw a plain `Error`. This was a defect shipped
+  in 0.1.0, not a new regression — `docs/exit-codes.md` documented both cases as exit `2`
+  from day one, while the shipped binary disagreed. Both paths now throw and catch the
+  same type; see `test/exit-codes.test.ts` for the behavioural table (every documented
+  exit code, every entry point) that pins it.
+
+### Added
+
+- **npm `lockfileVersion: 2` support.** `package-lock.json` files written by npm 7/8
+  (lockfileVersion 2) are now read the same way as lockfileVersion 3 — both carry the
+  same `"packages"` map. lockfileVersion 1 (npm 6, legacy `"dependencies"` tree only) is
+  still refused explicitly, by name, with a message naming the file and the version found.
+
 ## [0.1.0] - 2026-09-16
 
 ### Added

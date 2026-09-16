@@ -1,6 +1,6 @@
 {
   "name": "blastradius",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Rank outdated npm/pnpm/yarn dependencies by blast radius, not alphabet.",
   "license": "MIT",
   "type": "module",
