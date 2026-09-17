@@ -83,6 +83,13 @@ describe("exit code 2 — usage errors", () => {
     captureStdio();
     expect(await run(["node", "blastradius", "/tmp"])).toBe(2);
   });
+
+  it("--explain <missing-package> names the package and exits 2, not a crash", async () => {
+    const { err } = captureStdio();
+    const code = await run(["node", "blastradius", "--explain", "not-a-real-dep", fx("report-basic")]);
+    expect(code).toBe(2);
+    expect(err.join("")).toContain("not-a-real-dep");
+  });
 });
 
 describe("exit code 3 — monorepo refusal, and exit 0 with --root-only", () => {

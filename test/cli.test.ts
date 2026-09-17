@@ -46,6 +46,12 @@ describe("runReport --json", () => {
     expect(parsed.dependencies[0]).toHaveProperty("band");
     expect(parsed.dependencies[0]).toHaveProperty("files");
     expect(parsed.dependencies[0]).toHaveProperty("symbols");
+    // --explain's breakdown (scoring.ts) and perFile (usageMap.ts) are a
+    // text-renderer-only feature by standing decision — schemaVersion stays
+    // 1 and --json gains no breakdown key. Pinned by a check, not just by
+    // intention.
+    expect(parsed.dependencies[0]).not.toHaveProperty("breakdown");
+    expect(parsed.dependencies[0]).not.toHaveProperty("perFile");
   });
 
   it("matches the documented JSON shape for the fixture exactly", async () => {

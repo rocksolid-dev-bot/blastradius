@@ -7,6 +7,7 @@ import { buildFullReport, type BuildFullReportOptions } from "./report.js";
 import { formatTable } from "./table.js";
 import { detectMonorepoMarker } from "./monorepo.js";
 import { detectLockfileManager, UnsupportedLockfileError } from "./lockfile/index.js";
+import { buildExplainReport, formatExplain, PackageNotDeclaredError, type BuildExplainOptions } from "./explain.js";
 import type { Band } from "./scoring.js";
 
 const HELP = `blastradius — rank outdated dependencies by blast radius, not alphabet
@@ -17,6 +18,7 @@ Usage:
   blastradius --dry [dir]              Print declared vs. installed versions only, no registry call
   blastradius --fail-on <band> [dir]   Exit 1 if any dependency scores at or above <band> (review|urgent)
   blastradius --root-only [dir]        Monorepo escape hatch: analyze the root package.json only
+  blastradius --explain <package> [dir]  Print the score breakdown and per-file usage for one package
   blastradius --help                   Show this help and exit
 
 [dir] defaults to the current directory. Registry lookups are cached for 24h
@@ -36,18 +38,54 @@ Exit codes:
 `;
 
 const BAND_RANK: Record<Band, number> = { ok: 0, review: 1, urgent: 2 };
-const KNOWN_FLAGS = new Set(["--json", "--dry", "--help", "-h", "--fail-on", "--root-only"]);
+const KNOWN_FLAGS = new Set(["--json", "--dry", "--help", "-h", "--fail-on", "--root-only", "--explain"]);
 
 function firstNonFlag(args: string[]): string | undefined {
   for (let i = 0; i < args.length; i++) {
     const a = args[i]!;
-    if (a === "--fail-on") {
-      i++; // skip the value that belongs to --fail-on
+    if (a === "--fail-on" || a === "--explain") {
+      i++; // skip the value that belongs to this flag
       continue;
     }
     if (!a.startsWith("-")) return a;
   }
   return undefined;
+}
+
+/**
+ * Runs `--explain <package>`: a text-only score-breakdown-and-usage report
+ * for one named package. Exported (mirroring `runReport`) so tests can
+ * drive it directly with an injected registry fetcher.
+ */
+export async function runExplain(
+  dir: string,
+  packageName: string,
+  options: BuildExplainOptions = {},
+): Promise<number> {
+  try {
+    const result = await buildExplainReport(dir, packageName, options);
+    process.stdout.write(`${formatExplain(result)}\n`);
+    return 0;
+  } catch (err) {
+    if (err instanceof PackageNotDeclaredError) {
+      process.stderr.write(`blastradius: ${err.message}\n`);
+      return 2;
+    }
+    if (err instanceof UnsupportedLockfileError) {
+      process.stderr.write(`blastradius: ${err.message}\n`);
+      return 2;
+    }
+    const nodeErr = err as NodeJS.ErrnoException;
+    if (nodeErr?.code === "ENOENT") {
+      process.stderr.write(
+        `blastradius: no package.json (or lockfile) found in ${dir}${nodeErr.path ? ` (${nodeErr.path})` : ""}\n`,
+      );
+      return 2;
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`blastradius --explain failed: ${message}\n`);
+    return 1;
+  }
 }
 
 /**
@@ -165,6 +203,16 @@ export async function run(argv: string[]): Promise<number> {
       process.stderr.write(`blastradius --dry failed: ${message}\n`);
       return 1;
     }
+  }
+
+  if (args[0] === "--explain") {
+    const packageName = args[1];
+    if (!packageName) {
+      process.stderr.write(`blastradius: --explain requires a package name\n`);
+      return 2;
+    }
+    const dir = resolve(args[2] ?? process.cwd());
+    return runExplain(dir, packageName);
   }
 
   const jsonMode = args.includes("--json");

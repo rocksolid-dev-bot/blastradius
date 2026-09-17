@@ -15,6 +15,7 @@ describe("buildUsageMap", () => {
       chalk: {
         files: ["src/cjs.js"],
         symbols: [],
+        perFile: [{ file: "src/cjs.js", symbols: [] }],
         defaultImport: false,
         namespaceImport: false,
         typeOnly: false,
@@ -23,6 +24,7 @@ describe("buildUsageMap", () => {
       "left-pad": {
         files: ["src/esm.ts"],
         symbols: ["pad", "trim"],
+        perFile: [{ file: "src/esm.ts", symbols: ["default", "pad", "trim"] }],
         defaultImport: true,
         namespaceImport: false,
         typeOnly: false,
@@ -31,6 +33,7 @@ describe("buildUsageMap", () => {
       "left-pad-types": {
         files: ["src/types.ts"],
         symbols: ["Config"],
+        perFile: [{ file: "src/types.ts", symbols: ["Config"] }],
         defaultImport: false,
         namespaceImport: false,
         typeOnly: true,
@@ -39,6 +42,7 @@ describe("buildUsageMap", () => {
       react: {
         files: ["src/component.tsx"],
         symbols: [],
+        perFile: [{ file: "src/component.tsx", symbols: ["* (namespace)"] }],
         defaultImport: false,
         namespaceImport: true,
         typeOnly: false,
