@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { resolve } from "node:path";
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { buildDryReport, formatDryReport } from "./dry.js";
 import { buildFullReport, type BuildFullReportOptions } from "./report.js";
 import { formatTable } from "./table.js";
@@ -186,6 +188,18 @@ export async function run(argv: string[]): Promise<number> {
 
 // Only run as a side effect when invoked directly (`node cli.js` / the
 // installed bin) — not when imported, e.g. by tests.
-if (import.meta.url === `file://${process.argv[1]}`) {
+function isEntryPoint(): boolean {
+  const argvPath = process.argv[1];
+  if (!argvPath) return false;
+  try {
+    return realpathSync(argvPath) === fileURLToPath(import.meta.url);
+  } catch {
+    // Unresolvable path (missing file, permissions, etc.) means "not the entry point",
+    // not a crash — this guard must never throw.
+    return false;
+  }
+}
+
+if (isEntryPoint()) {
   run(process.argv).then((code) => process.exit(code));
 }
