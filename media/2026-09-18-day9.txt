@@ -330,3 +330,227 @@ exit=0
 $ node dist/cli.js /tmp/real-pnpm --json
 {"schemaVersion":1,"dependencies":[{"name":"@types/node","declared":"20.14.0","installed":"20.14.0","latest":"26.6.1","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"left-pad","declared":"1.3.0","installed":"1.3.0","latest":"1.3.0","registryStatus":"ok","deprecated":true,"jump":"patch","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"react","declared":"18.2.0","installed":"18.2.0","latest":"19.3.0","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"react-dom","declared":"18.2.0","installed":"18.2.0","latest":"19.3.0","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"}],"skipped":[]}
 exit=0
+
+=== Item 3: calibration against five real public repos (read-only clones in /tmp, nothing copied into this repo) ===
+
+--- lodash ---
+$ node dist/cli.js /tmp/calib/lodash
+blastradius: Unsupported npm lockfile version: 1 (package-lock.json). lockfileVersion 2 or 3 is supported (npm 7+); run `npm install` with npm 7 or newer to upgrade the lockfile.
+exit=2
+
+--- axios ---
+$ node dist/cli.js /tmp/calib/axios
+lockfile: npm
+package               declared  installed  latest   jump    files  score  band  
+https-proxy-agent     ^5.0.1    5.0.1      9.1.0    major   2      48     review
+vitest                ^4.1.9    4.1.11     5.0.1    major   102    37     review
+form-data             ^4.0.6    4.0.6      4.0.6    patch   8      27     review
+@vitest/browser-pla…  ^4.1.9    4.1.11     5.0.1    major   1      23     review
+chalk                 ^5.6.2    5.6.2      6.0.0    major   1      23     review
+follow-redirects      ^1.16.0   1.16.0     1.16.0   patch   1      10     ok    
+multer                ^2.2.0    2.3.0      2.4.0    minor   1      10     ok    
+proxy-from-env        ^2.1.0    2.1.0      2.1.0    patch   1      10     ok    
+get-stream            ^9.0.1    9.0.1      9.0.1    patch   2      8      ok    
+abortcontroller-pol…  ^1.7.8    1.7.8      1.7.8    patch   2      7      ok    
+formidable            ^3.5.4    3.5.4      3.5.4    patch   2      7      ok    
+minimist              ^1.2.8    1.2.8      1.2.8    patch   2      7      ok    
+formdata-node         ^6.0.3    6.0.3      6.0.3    patch   1      6      ok    
+@eslint/js            ^10.0.1   10.0.1     10.0.1   patch   1      5      ok    
+@rollup/plugin-alias  ^6.0.0    6.0.0      6.0.0    patch   1      5      ok    
+@rollup/plugin-babel  ^7.1.0    7.1.0      7.1.0    patch   1      5      ok    
+@rollup/plugin-comm…  ^29.0.3   29.0.3     29.0.3   patch   1      5      ok    
+@rollup/plugin-json   ^6.1.0    6.1.0      6.1.0    patch   1      5      ok    
+@rollup/plugin-node…  ^16.0.3   16.0.3     16.0.3   patch   1      5      ok    
+@rollup/plugin-ters…  ^1.0.0    1.0.0      1.0.0    patch   1      5      ok    
+acorn                 ^8.17.0   8.18.0     8.18.0   patch   1      5      ok    
+body-parser           ^2.3.0    2.3.0      2.3.0    patch   1      5      ok    
+dev-null              ^0.1.1    0.1.1      0.1.1    patch   1      5      ok    
+express               ^5.2.1    5.2.1      5.2.1    patch   1      5      ok    
+fs-extra              ^11.3.6   11.4.0     11.4.0   patch   1      5      ok    
+globals               ^17.7.0   17.12.0    17.12.0  patch   1      5      ok    
+gulp                  ^5.0.1    5.0.1      5.0.1    patch   1      5      ok    
+rollup-plugin-bundl…  ^1.0.3    1.0.3      1.0.3    patch   1      5      ok    
+selfsigned            ^5.5.0    5.5.0      5.5.0    patch   1      5      ok    
+stream-throttle       ^0.1.3    0.1.3      0.1.3    patch   1      5      ok    
+@babel/core           ^7.29.0   7.29.7     8.0.5    unused  0      0      ok    
+@babel/preset-env     ^7.29.5   7.29.7     8.0.5    unused  0      0      ok    
+@commitlint/cli       ^21.2.0   21.2.2     21.2.2   unused  0      0      ok    
+@commitlint/config-…  ^21.2.0   21.2.2     21.2.2   unused  0      0      ok    
+@vitest/browser       ^4.1.9    4.1.11     5.0.1    unused  0      0      ok    
+cross-env             ^10.1.0   10.1.0     10.1.0   unused  0      0      ok    
+eslint                ^10.6.0   10.10.0    10.10.0  unused  0      0      ok    
+husky                 ^9.1.7    9.1.7      9.1.7    unused  0      0      ok    
+lint-staged           ^17.0.8   17.5.0     17.5.1   unused  0      0      ok    
+playwright            ^1.61.1   1.63.0     1.63.0   unused  0      0      ok    
+prettier              ^3.9.4    3.9.6      3.9.8    unused  0      0      ok    
+rollup                ^4.60.4   4.63.1     4.63.3   unused  0      0      ok    
+typescript            ^5.9.3    5.9.3      7.0.2    unused  0      0      ok    
+exit=0
+
+--- json-server ---
+$ node dist/cli.js /tmp/calib/json-server
+lockfile: pnpm
+package           declared  installed  latest  jump    files  score  band  
+chalk             ^5.6.2    5.6.2      6.0.0   major   1      45     review
+lowdb             ^7.0.1    7.0.1      7.0.1   patch   8      35     review
+dot-prop          ^10.1.0   10.1.0     10.2.0  minor   1      20     review
+eta               ^4.5.0    4.5.0      4.6.0   minor   1      20     review
+@tinyhttp/app     ^3.0.1    3.0.1      3.0.11  patch   1      10     ok    
+@tinyhttp/cors    ^2.0.1    2.0.1      2.0.1   patch   1      10     ok    
+chokidar          ^5.0.0    5.0.0      5.0.0   patch   1      10     ok    
+get-port          ^7.1.0    7.1.0      7.2.0   minor   1      10     ok    
+inflection        ^3.0.2    3.0.2      3.0.2   patch   1      10     ok    
+json5             ^2.2.3    2.2.3      2.2.3   patch   1      10     ok    
+milliparsec       ^5.1.0    5.1.0      5.1.2   patch   1      10     ok    
+sirv              ^3.0.2    3.0.2      3.0.2   patch   1      10     ok    
+sort-on           ^7.0.0    7.0.0      7.0.0   patch   1      10     ok    
+tempy             ^3.1.0    3.1.0      3.2.0   minor   1      10     ok    
+type-fest         ^5.4.0    5.4.0      5.10.0  minor   6      6      ok    
+@tinyhttp/logger  ^2.1.0    2.1.0      2.1.0   unused  0      0      ok    
+@types/node       ^25.0.8   25.0.8     26.6.1  unused  0      0      ok    
+concurrently      ^9.2.1    9.2.1      10.0.5  unused  0      0      ok    
+husky             ^9.1.7    9.1.7      9.1.7   unused  0      0      ok    
+oxfmt             ^0.24.0   0.24.0     0.68.0  unused  0      0      ok    
+oxlint            ^1.39.0   1.39.0     1.83.0  unused  0      0      ok    
+typescript        ^5.9.3    5.9.3      7.0.2   unused  0      0      ok    
+exit=0
+
+--- webpack ---
+$ node dist/cli.js /tmp/calib/webpack
+lockfile: yarn
+package        declared         installed  latest   jump    files  score  band  
+es-module-le…  ^2.1.0           2.3.2      3.0.2    major   2      46     review
+tapable        ^2.3.0           2.3.3      2.3.3    patch   38     40     review
+schema-utils   ^4.5.0           4.5.0      4.5.0    patch   6      31     review
+typescript     ^6.0.3           6.0.3      7.0.2    major   4      31     review
+graceful-fs    ^4.2.11          4.2.11     4.2.11   patch   21     25     review
+minimizer-we…  ^5.7.0           5.10.1     5.10.1   patch   67     25     review
+webpack-sour…  ^3.5.1           3.5.1      3.5.1    patch   83     25     review
+eslint         ^9.39.5          9.39.5     10.10.0  major   1      24     review
+jest-worker    ^30.2.0          27.5.1     30.5.1   major   1      23     review
+color-name     ^2.1.1           1.1.4      2.1.1    major   1      22     review
+glob           ^13.0.6          7.2.3      13.0.6   major   1      22     review
+json-schema-…  ^15.0.4          15.0.4     16.0.0   major   1      22     review
+browserslist   ^4.28.1          4.28.9     4.29.0   minor   2      21     review
+react          ^19.2.7          19.3.0     19.3.0   patch   47     21     review
+date-fns       ^4.4.0           4.4.0      4.4.0    patch   6      20     review
+lodash-es      ^4.17.15         4.18.1     4.18.1   patch   6      20     review
+react-dom      ^19.2.7          19.3.0     19.3.0   patch   12     20     review
+lodash         ^4.17.19         4.18.1     4.18.1   patch   11     19     ok    
+memfs          ^4.57.6          4.77.0     4.78.1   minor   19     18     ok    
+mime-db        ^1.54.0          1.52.0     1.54.0   minor   1      18     ok    
+enhanced-res…  ^5.25.0          5.25.1     5.25.1   patch   4      17     ok    
+@codspeed/co…  ^5.5.0           5.7.1      5.7.1    patch   3      14     ok    
+@webassembly…  ^1.14.1          1.14.1     1.14.1   patch   3      14     ok    
+@webassembly…  ^1.14.1          1.14.1     1.14.1   patch   3      14     ok    
+acorn          ^8.16.0          8.18.0     8.18.0   patch   17     14     ok    
+core-js        ^3.47.0          3.50.0     3.50.0   patch   7      14     ok    
+less           ^4.6.4           4.9.1      4.9.1    patch   10     13     ok    
+mini-css-ext…  ^2.9.0           2.10.2     2.10.2   patch   14     13     ok    
+prettier       ^3.8.2           3.9.6      3.9.8    patch   7      13     ok    
+rimraf         ^3.0.2           6.1.3      6.1.3    patch   16     13     ok    
+mdn-data       ^2.29.0          2.35.0     2.36.0   minor   2      11     ok    
+three          ^0.186.0         0.186.0    0.186.0  patch   2      11     ok    
+watchpack      ^2.5.2           2.5.2      2.5.2    patch   2      11     ok    
+@webref/elem…  ^2.8.0           2.8.0      2.9.0    minor   1      9      ok    
+@webref/idl    ^3.83.1          3.83.1     3.84.0   minor   1      9      ok    
+oxc-parser     ^0.149.0         0.149.0    0.150.0  minor   1      9      ok    
+puppeteer-co…  ^25.3.0          25.10.0    25.11.0  minor   1      9      ok    
+@webassembly…  ^1.14.1          1.14.1     1.14.1   patch   1      8      ok    
+chrome-trace…  ^1.0.2           1.0.4      1.0.4    patch   1      8      ok    
+terser         ^5.46.2          5.51.2     5.51.2   patch   3      8      ok    
+tinybench      ^6.0.1           6.2.0      6.2.0    patch   2      8      ok    
+mini-svg-dat…  ^1.2.3           1.4.4      1.4.4    patch   3      7      ok    
+simple-git     ^3.28.0          3.36.0     3.36.0   patch   2      7      ok    
+toml           ^5.0.0           5.0.0      5.0.0    patch   3      7      ok    
+webassembly-…  1.3.0            1.3.0      1.3.0    patch   3      7      ok    
+xxhashjs       ^0.2.2           0.2.2      0.2.2    patch   3      7      ok    
+@babel/core    ^8.0.1           8.0.5      8.0.5    patch   2      6      ok    
+@changesets/…  ^1.0.1           1.0.1      1.0.1    patch   1      6      ok    
+@puppeteer/b…  ^3.2.2           3.2.2      3.2.2    patch   2      6      ok    
+fork-ts-chec…  ^9.0.2           9.1.0      9.1.0    patch   2      6      ok    
+jest-environ…  ^30.3.0          30.5.1     30.5.1   patch   2      6      ok    
+jest-snapshot  ^30.3.0          30.5.1     30.5.1   patch   2      6      ok    
+meriyah        ^7.0.0           7.3.3      7.3.3    patch   2      6      ok    
+yamljs         ^0.3.0           0.3.0      0.3.0    patch   2      6      ok    
+eslint-confi…  ^4.14.0          4.14.0     4.14.0   patch   1      5      ok    
+globals        ^17.6.0          17.12.0    17.12.0  patch   1      5      ok    
+rehype-sanit…  ^6.0.0           6.0.0      6.0.0    patch   1      5      ok    
+rehype-strin…  ^10.0.1          10.0.1     10.0.1   patch   1      5      ok    
+remark-front…  ^5.0.0           5.0.0      5.0.0    patch   1      5      ok    
+remark-gfm     ^4.0.1           4.0.1      4.0.1    patch   1      5      ok    
+remark-parse   ^11.0.0          11.0.0     11.0.0   patch   1      5      ok    
+remark-rehype  ^11.1.2          11.1.2     11.1.2   patch   1      5      ok    
+typescript-e…  ^8.70.0          8.70.0     8.70.0   patch   1      5      ok    
+unified        ^11.0.5          11.0.5     11.0.5   patch   1      5      ok    
+@mdn/browser…  ^8.0.9           8.1.1      8.1.2    patch   1      4      ok    
+ajv            ^8.20.0          8.20.0     8.20.0   patch   1      4      ok    
+commondir      ^1.0.1           1.0.1      1.0.1    patch   1      4      ok    
+es5-ext        ^0.10.53         0.10.64    0.10.64  patch   1      4      ok    
+eslint-scope   ^9.1.2           9.1.2      9.1.2    patch   1      4      ok    
+eta            ^4.6.0           4.6.0      4.6.0    patch   1      4      ok    
+hash-wasm      ^4.9.0           4.12.0     4.12.0   patch   1      4      ok    
+jest-diff      ^30.3.0          30.5.1     30.5.1   patch   1      4      ok    
+json5          ^2.1.3           2.2.3      2.2.3    patch   1      4      ok    
+less-loader    ^13.0.0          13.0.0     13.0.0   patch   1      4      ok    
+pretty-format  ^30.0.5          30.5.1     30.5.1   patch   1      4      ok    
+wast-loader    ^1.12.1          1.14.1     1.14.1   patch   1      4      ok    
+webpack-cli    ^7.2.1           7.2.3      7.2.3    patch   1      4      ok    
+webpack-dev-…  ^6.0.0           6.0.0      6.0.0    patch   1      4      ok    
+@babel/prese…  ^8.0.1           8.0.1      8.0.1    unused  0      0      ok    
+@changesets/…  ^3.0.1           3.0.2      3.0.3    unused  0      0      ok    
+@types/conve…  ^2.0.3           2.0.3      2.0.3    unused  0      0      ok    
+@types/estree  ^1.0.8           1.0.9      1.0.9    unused  0      0      ok    
+@types/grace…  ^4.1.9           4.1.9      4.1.9    unused  0      0      ok    
+@types/jest    ^30.0.0          30.0.0     30.0.0   unused  0      0      ok    
+@types/json-…  ^7.0.15          7.0.15     7.0.15   unused  0      0      ok    
+@types/mime-…  ^1.43.6          1.43.6     1.43.6   unused  0      0      ok    
+@types/node    ^26.2.0          26.5.1     26.6.1   unused  0      0      ok    
+@types/xxhas…  ^0.2.4           0.2.4      0.2.4    unused  0      0      ok    
+@webdiscus/p…  ^2.11.1          2.11.1     2.11.1   unused  0      0      ok    
+assemblyscri…  ^0.28.18         0.28.20    0.28.20  unused  0      0      ok    
+babel-loader   ^10.0.0          10.1.1     10.1.1   unused  0      0      ok    
+bundle-loader  ^0.5.6           0.5.6      0.5.6    unused  0      0      ok    
+coffee-loader  ^5.0.0           5.0.0      5.0.0    unused  0      0      ok    
+coffeescript   ^2.5.1           2.7.0      2.7.0    unused  0      0      ok    
+cspell         ^10.0.1          10.3.0     10.3.3   unused  0      0      ok    
+css-loader     ^7.1.2           7.1.5      7.1.5    unused  0      0      ok    
+es6-promise-…  ^1.2.0           1.2.0      1.2.0    unused  0      0      ok    
+events         ^3.2.0           3.3.0      3.3.0    unused  0      0      ok    
+file-loader    ^6.0.0           6.2.0      6.2.0    unused  0      0      ok    
+html-loader    ^5.1.0           5.1.0      5.1.0    unused  0      0      ok    
+husky          ^9.0.11          9.1.7      9.1.7    unused  0      0      ok    
+istanbul       ^0.4.5           0.4.5      0.4.5    unused  0      0      ok    
+jest           ^30.3.0          30.5.1     30.5.1   unused  0      0      ok    
+jest-circus    ^30.3.0          30.5.1     30.5.1   unused  0      0      ok    
+jest-cli       ^30.3.0          30.5.1     30.5.1   unused  0      0      ok    
+jest-junit     ^17.0.0          17.0.0     17.0.0   unused  0      0      ok    
+json-loader    ^0.5.7           0.5.7      0.5.7    unused  0      0      ok    
+lint-staged    ^17.0.7          17.5.1     17.5.1   unused  0      0      ok    
+node-gyp       ^13.0.0          13.0.2     13.0.2   unused  0      0      ok    
+nyc            ^18.0.0          18.0.0     18.0.0   unused  0      0      ok    
+open-cli       ^9.0.0           9.0.0      9.0.0    unused  0      0      ok    
+pkg-pr-new     ^0.0.88          0.0.88     0.0.88   unused  0      0      ok    
+prettier-2     npm:prettier@^2  2.8.8      99.9.9   unused  0      0      ok    
+pug            ^3.0.3           3.0.4      3.0.4    unused  0      0      ok    
+raw-loader     ^4.0.1           0.5.1      4.0.2    unused  0      0      ok    
+script-loader  ^0.7.2           0.7.2      0.7.2    unused  0      0      ok    
+style-loader   ^4.0.0           4.0.0      4.0.0    unused  0      0      ok    
+ts-loader      ^9.6.0           9.6.2      9.6.2    unused  0      0      ok    
+url-loader     ^4.1.0           4.1.1      4.1.1    unused  0      0      ok    
+exit=0
+
+--- react ---
+$ node dist/cli.js /tmp/calib/react
+blastradius: refusing to run — monorepo marker found (package.json workspaces field).
+Workspace packages are not analyzed yet; a workspace root's package.json
+lists almost no real dependencies and would print a near-empty, misleading
+table. Pass --root-only to analyze the root package.json alone.
+exit=3
+
+=== Item 3: band-count summaries (from the --json runs above, computed for this write-up) ===
+lodash: refused, exit=2 (npm lockfileVersion 1)
+axios: total=43 ok=38 review=5 urgent=0. top3: https-proxy-agent:48, vitest:37, form-data:27
+json-server: total=22 ok=18 review=4 urgent=0. top3: chalk:45, lowdb:35, dot-prop:20
+webpack: total=119 ok=102 review=17 urgent=0. top3: es-module-lexer:46, tapable:40, schema-utils:31
+react: refused, exit=3 (monorepo, workspaces field)
