@@ -1,0 +1,239 @@
+=== Item 1a: single push attempt ===
+$ git push origin main
+To https://github.com/rocksolid-dev-bot/blastradius.git
+ ! [remote rejected] main -> main (refusing to allow a Personal Access Token to create or update workflow `.github/workflows/ci.yml` without `workflow` scope)
+error: failed to push some refs to 'https://github.com/rocksolid-dev-bot/blastradius.git'
+exit=1
+--- rejected as expected (workflow scope). per TODAY.md: no retry, no history rewrite, no deleting ci.yml. Proceeding to 1b. ---
+
+=== Item 1b: scripts/prepush.sh (local gate) ===
+$ ./scripts/prepush.sh
+== npm ci ==
+
+added 50 packages, and audited 51 packages in 2s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+5 vulnerabilities (3 moderate, 1 high, 1 critical)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+== npx tsc --noEmit ==
+== npm run build ==
+
+> blastradius@0.1.1 build
+> tsc -p tsconfig.json
+
+== npm test ==
+
+> blastradius@0.1.1 test
+> vitest run
+
+
+ RUN  v2.1.9 /work/code
+
+ ✓ test/exit-codes.test.ts (21 tests) 70ms
+ ✓ test/scoring.test.ts (10 tests) 12ms
+ ✓ test/failon-monorepo.test.ts (12 tests) 61ms
+ ✓ test/lockfile.test.ts (14 tests) 25ms
+ ✓ test/cli.test.ts (5 tests) 63ms
+ ✓ test/registry.test.ts (5 tests) 39ms
+ ✓ test/report.test.ts (3 tests) 49ms
+ ✓ test/explain.test.ts (2 tests) 41ms
+ ✓ test/semver.test.ts (27 tests) 17ms
+ ✓ test/table.test.ts (7 tests) 7ms
+ ✓ test/usageMap.test.ts (2 tests) 48ms
+ ✓ test/bin.test.ts (1 test) 707ms
+   ✓ bin entry point via symlink (the way npm's `bin` starts it) > runs and prints usage when invoked through a symlink 706ms
+
+ Test Files  12 passed (12)
+      Tests  109 passed (109)
+   Start at  23:01:03
+   Duration  9.08s (transform 384ms, setup 0ms, collect 3.36s, tests 1.14s, environment 4ms, prepare 1.19s)
+
+== install into throwaway prefix and invoke the bin shim ==
+
+added 1 package in 348ms
+node:internal/errors:496
+    ErrorCaptureStackTrace(err);
+    ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'typescript' imported from /tmp/br-prefix/lib/node_modules/blastradius/dist/imports.js
+    at new NodeError (node:internal/errors:405:5)
+    at packageResolve (node:internal/modules/esm/resolve:916:9)
+    at moduleResolve (node:internal/modules/esm/resolve:973:20)
+    at defaultResolve (node:internal/modules/esm/resolve:1193:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:403:12)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:372:25)
+    at ModuleLoader.getModuleJob (node:internal/modules/esm/loader:249:38)
+    at ModuleWrap.<anonymous> (node:internal/modules/esm/module_job:76:39)
+    at link (node:internal/modules/esm/module_job:75:36) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v18.19.1
+exit=1
+
+=== Item 1b RETRY after fixing a real defect the gate caught: typescript was devDependency-only, npm i -g omits devDependencies, dist/imports.js crashed with ERR_MODULE_NOT_FOUND. Moved typescript to dependencies (already license-checked, Apache-2.0, BRIEF.md), added test/deps.test.ts guarding the whole class of bug, regenerated package-lock.json. ===
+$ ./scripts/prepush.sh
+== npm ci ==
+
+added 50 packages, and audited 51 packages in 2s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+5 vulnerabilities (3 moderate, 1 high, 1 critical)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+== npx tsc --noEmit ==
+== npm run build ==
+
+> blastradius@0.1.1 build
+> tsc -p tsconfig.json
+
+== npm test ==
+
+> blastradius@0.1.1 test
+> vitest run
+
+
+ RUN  v2.1.9 /work/code
+
+ ✓ test/exit-codes.test.ts (21 tests) 55ms
+ ✓ test/scoring.test.ts (10 tests) 11ms
+ ✓ test/failon-monorepo.test.ts (12 tests) 49ms
+ ✓ test/lockfile.test.ts (14 tests) 27ms
+ ✓ test/cli.test.ts (5 tests) 91ms
+ ✓ test/registry.test.ts (5 tests) 37ms
+ ✓ test/report.test.ts (3 tests) 46ms
+ ✓ test/explain.test.ts (2 tests) 45ms
+ ✓ test/semver.test.ts (27 tests) 18ms
+ ✓ test/deps.test.ts (1 test) 8ms
+ ✓ test/table.test.ts (7 tests) 7ms
+ ✓ test/usageMap.test.ts (2 tests) 48ms
+ ✓ test/bin.test.ts (1 test) 741ms
+   ✓ bin entry point via symlink (the way npm's `bin` starts it) > runs and prints usage when invoked through a symlink 739ms
+
+ Test Files  13 passed (13)
+      Tests  110 passed (110)
+   Start at  23:02:56
+   Duration  9.72s (transform 380ms, setup 0ms, collect 3.45s, tests 1.18s, environment 5ms, prepare 1.22s)
+
+== install into throwaway prefix and invoke the bin shim ==
+
+added 2 packages in 1s
+blastradius — rank outdated dependencies by blast radius, not alphabet
+
+Usage:
+  blastradius [dir]                    Ranked table: registry + usage + score (npm, pnpm, or yarn classic)
+  blastradius --json [dir]             Same report as machine-readable JSON on stdout
+  blastradius --dry [dir]              Print declared vs. installed versions only, no registry call
+  blastradius --fail-on <band> [dir]   Exit 1 if any dependency scores at or above <band> (review|urgent)
+  blastradius --root-only [dir]        Monorepo escape hatch: analyze the root package.json only
+  blastradius --explain <pkg> [dir]    Print the score breakdown and per-file usage for one package
+  blastradius --help                   Show this help and exit
+
+[dir] defaults to the current directory. Registry lookups are cached for 24h
+in $XDG_CACHE_HOME/blastradius (or ~/.cache/blastradius); a lookup that
+fails for any reason (offline, timeout, 429/5xx, bad body) renders as
+"unknown" rather than crashing the run.
+
+A workspace root (`workspaces` in package.json, pnpm-workspace.yaml, or
+lerna.json) is refused by default — half-support produces a confidently
+wrong answer. Pass --root-only to analyze the root package.json alone.
+
+Exit codes:
+  0  success — --fail-on's band was not reached (or --fail-on was not given)
+  1  --fail-on's band was reached by at least one dependency
+  2  usage error — unknown flag, invalid --fail-on value, or no package.json found
+  3  monorepo detected and refused (see --root-only)
+== prepush.sh: all steps passed ==
+exit=0
+
+=== Item 1b RETRY 2: add explicit echo of the br-prefix invocation for capture clarity ===
+$ ./scripts/prepush.sh
+== npm ci ==
+
+added 50 packages, and audited 51 packages in 2s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+5 vulnerabilities (3 moderate, 1 high, 1 critical)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+== npx tsc --noEmit ==
+== npm run build ==
+
+> blastradius@0.1.1 build
+> tsc -p tsconfig.json
+
+== npm test ==
+
+> blastradius@0.1.1 test
+> vitest run
+
+
+ RUN  v2.1.9 /work/code
+
+ ✓ test/exit-codes.test.ts (21 tests) 68ms
+ ✓ test/scoring.test.ts (10 tests) 13ms
+ ✓ test/failon-monorepo.test.ts (12 tests) 53ms
+ ✓ test/lockfile.test.ts (14 tests) 26ms
+ ✓ test/cli.test.ts (5 tests) 55ms
+ ✓ test/registry.test.ts (5 tests) 29ms
+ ✓ test/report.test.ts (3 tests) 38ms
+ ✓ test/explain.test.ts (2 tests) 44ms
+ ✓ test/semver.test.ts (27 tests) 12ms
+ ✓ test/deps.test.ts (1 test) 9ms
+ ✓ test/table.test.ts (7 tests) 7ms
+ ✓ test/usageMap.test.ts (2 tests) 41ms
+ ✓ test/bin.test.ts (1 test) 626ms
+   ✓ bin entry point via symlink (the way npm's `bin` starts it) > runs and prints usage when invoked through a symlink 625ms
+
+ Test Files  13 passed (13)
+      Tests  110 passed (110)
+   Start at  23:03:31
+   Duration  9.29s (transform 425ms, setup 0ms, collect 3.42s, tests 1.02s, environment 5ms, prepare 1.28s)
+
+== install into throwaway prefix and invoke the bin shim ==
+
+added 2 packages in 886ms
+$ /tmp/br-prefix/bin/blastradius --help
+blastradius — rank outdated dependencies by blast radius, not alphabet
+
+Usage:
+  blastradius [dir]                    Ranked table: registry + usage + score (npm, pnpm, or yarn classic)
+  blastradius --json [dir]             Same report as machine-readable JSON on stdout
+  blastradius --dry [dir]              Print declared vs. installed versions only, no registry call
+  blastradius --fail-on <band> [dir]   Exit 1 if any dependency scores at or above <band> (review|urgent)
+  blastradius --root-only [dir]        Monorepo escape hatch: analyze the root package.json only
+  blastradius --explain <pkg> [dir]    Print the score breakdown and per-file usage for one package
+  blastradius --help                   Show this help and exit
+
+[dir] defaults to the current directory. Registry lookups are cached for 24h
+in $XDG_CACHE_HOME/blastradius (or ~/.cache/blastradius); a lookup that
+fails for any reason (offline, timeout, 429/5xx, bad body) renders as
+"unknown" rather than crashing the run.
+
+A workspace root (`workspaces` in package.json, pnpm-workspace.yaml, or
+lerna.json) is refused by default — half-support produces a confidently
+wrong answer. Pass --root-only to analyze the root package.json alone.
+
+Exit codes:
+  0  success — --fail-on's band was not reached (or --fail-on was not given)
+  1  --fail-on's band was reached by at least one dependency
+  2  usage error — unknown flag, invalid --fail-on value, or no package.json found
+  3  monorepo detected and refused (see --root-only)
+== prepush.sh: all steps passed ==
+exit=0

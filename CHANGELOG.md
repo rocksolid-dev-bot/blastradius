@@ -4,6 +4,41 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.2.0] - 2026-09-18
+
+### Changed
+
+- **The v0.2.0 release gate no longer depends on GitHub Actions.** The gate's purpose was
+  "proven green before a tag"; Actions was one way to prove that, never the only one. The
+  configured push token (a fine-grained PAT) cannot push anything under
+  `.github/workflows/` — every push attempt is rejected server-side for missing the
+  "workflow" scope. `.github/workflows/ci.yml` exists in this repo's history and is correct,
+  but has never reached `origin` and has no runs on GitHub to point at. `scripts/prepush.sh`
+  is now the real gate: `npm ci` → `tsc --noEmit` → `npm run build` → `npm test` → install
+  into a throwaway global prefix and invoke the `bin` shim through the exact symlink shape
+  npm creates. This release was cut on a real, captured, green run of that script.
+
+### Added
+
+- `--explain <package> [dir]`: prints the full score breakdown (every component, every
+  multiplier) and the per-file symbol usage for one package. Wires in the `breakdown` and
+  `perFile` signals that scoring/usage tracking had computed since day 7 but nothing
+  consumed. `--json`'s shape is unchanged (`schemaVersion` stays `1`; no `breakdown` or
+  `perFile` key) — `--explain` is a text renderer, not a schema change.
+
+### Fixed
+
+- **`typescript` was a runtime dependency living only in `devDependencies`.** `src/imports.ts`
+  imports the TypeScript compiler API to parse source files, but the package had never been
+  moved out of `devDependencies` — so `npm i -g` (the exact install a real user or the `bin`
+  field needs) omitted it, and the installed binary crashed with `ERR_MODULE_NOT_FOUND` on
+  first use, while `npm test` stayed green because dev dependencies are present during
+  testing. Caught by `scripts/prepush.sh`'s throwaway-global-install step — the reason that
+  step exists. Fixed by moving `typescript` to `dependencies` (already license-checked,
+  Apache-2.0, see `BRIEF.md`); `test/deps.test.ts` now pins the whole class of bug by
+  asserting every non-relative, non-`node:` import anywhere in `src/` is a declared
+  `dependencies` entry, not just a `devDependencies` one.
+
 ## [0.1.1] - 2026-09-17
 
 ### Fixed
