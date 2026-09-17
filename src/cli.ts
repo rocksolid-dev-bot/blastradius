@@ -18,7 +18,7 @@ Usage:
   blastradius --dry [dir]              Print declared vs. installed versions only, no registry call
   blastradius --fail-on <band> [dir]   Exit 1 if any dependency scores at or above <band> (review|urgent)
   blastradius --root-only [dir]        Monorepo escape hatch: analyze the root package.json only
-  blastradius --explain <package> [dir]  Print the score breakdown and per-file usage for one package
+  blastradius --explain <pkg> [dir]    Print the score breakdown and per-file usage for one package
   blastradius --help                   Show this help and exit
 
 [dir] defaults to the current directory. Registry lookups are cached for 24h

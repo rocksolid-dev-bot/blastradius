@@ -1,7 +1,5 @@
 # blastradius
 
-[![CI](https://github.com/rocksolid-dev-bot/blastradius/actions/workflows/ci.yml/badge.svg)](https://github.com/rocksolid-dev-bot/blastradius/actions/workflows/ci.yml)
-
 Ranks outdated dependencies by how much of your code actually touches them, not
 alphabetically and not by version-jump size alone. Reads npm, pnpm, and yarn classic
 lockfiles.
@@ -69,6 +67,7 @@ Usage:
   blastradius --dry [dir]              Print declared vs. installed versions only, no registry call
   blastradius --fail-on <band> [dir]   Exit 1 if any dependency scores at or above <band> (review|urgent)
   blastradius --root-only [dir]        Monorepo escape hatch: analyze the root package.json only
+  blastradius --explain <pkg> [dir]    Print the score breakdown and per-file usage for one package
   blastradius --help                   Show this help and exit
 
 [dir] defaults to the current directory. Registry lookups are cached for 24h
@@ -127,6 +126,39 @@ lockfile: npm
 package   declared  installed  latest  jump   files  score  band  
 left-pad  ^1.3.0    1.3.0      1.3.0   patch  1      40     review
 (exit 0)
+```
+
+### `--explain <package>`
+
+A text-only deep dive on one package: the score, then every scoring component and multiplier
+that produced it, then the file list showing which symbols each file actually uses. `--json`
+does not carry this breakdown — it's the renderer this flag exists for, and only that.
+
+```
+$ blastradius --explain typescript .
+typescript: score 23 (review)
+
+components:
+  jump: 40
+  files: 3
+  symbols: 2
+  namespace: 0
+  deprecated: 0
+multipliers:
+  type-only: x1
+  dev-only: x0.5
+
+files:
+  src/imports.ts: default
+```
+
+Naming a package that isn't in `package.json` at all is a usage error, same family as an unknown
+flag — it exits `2` and names the package, without ever hitting the registry:
+
+```
+$ blastradius --explain not-a-real-dep .
+blastradius: package "not-a-real-dep" is not declared in package.json
+exit=2
 ```
 
 ### pnpm and yarn
@@ -193,11 +225,19 @@ Full detail: [`docs/exit-codes.md`](docs/exit-codes.md).
 
 ## CI
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to `main` and every
-pull request: `npm ci`, `npx tsc --noEmit`, `npm test`, then `npm run build` and
-`node dist/cli.js --help` as a smoke test of the built binary — on Node 18 (the floor in
-`engines`) and Node 22 (proves support isn't accidentally 18-only). No step touches the network
-beyond npm itself; the suite mocks the registry.
+`.github/workflows/ci.yml` (defined in this repo, not yet running on GitHub — see below) runs on
+every push to `main` and every pull request: `npm ci`, `npx tsc --noEmit`, `npm run build`,
+`npm test`, then `node dist/cli.js --help` and `npm link && blastradius --help` as smoke tests of
+the built binary and the `bin` entry point — on Node 18 (the floor in `engines`) and Node 22
+(proves support isn't accidentally 18-only). No step touches the network beyond npm itself; the
+suite mocks the registry.
+
+**Not live yet:** the configured push token (a fine-grained PAT) lacks the "Workflows" repository
+permission GitHub requires to accept a push that adds or changes anything under
+`.github/workflows/`. The workflow file is committed locally in this repo's history but has never
+reached `origin` — no badge, no run, no green checkmark to point at honestly. See `STATUS.md` for
+the exact rejection and what's needed to unblock it (a token regrant, not something fixable from
+inside a build cycle).
 
 ## What it does not do
 

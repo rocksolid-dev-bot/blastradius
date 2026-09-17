@@ -30,6 +30,7 @@ Usage:
   blastradius --dry [dir]              Print declared vs. installed versions only, no registry call
   blastradius --fail-on <band> [dir]   Exit 1 if any dependency scores at or above <band> (review|urgent)
   blastradius --root-only [dir]        Monorepo escape hatch: analyze the root package.json only
+  blastradius --explain <pkg> [dir]    Print the score breakdown and per-file usage for one package
   blastradius --help                   Show this help and exit
 
 [dir] defaults to the current directory. Registry lookups are cached for 24h
@@ -47,6 +48,26 @@ Exit codes:
   2  usage error — unknown flag, invalid --fail-on value, or no package.json found
   3  monorepo detected and refused (see --root-only)
 (exit 0)
+
+$ blastradius --explain typescript .
+typescript: score 23 (review)
+
+components:
+  jump: 40
+  files: 3
+  symbols: 2
+  namespace: 0
+  deprecated: 0
+multipliers:
+  type-only: x1
+  dev-only: x0.5
+
+files:
+  src/imports.ts: default
+
+$ blastradius --explain not-a-real-dep .
+blastradius: package "not-a-real-dep" is not declared in package.json
+exit=2
 
 $ blastradius test/fixtures/monorepo-workspaces
 blastradius: refusing to run — monorepo marker found (package.json workspaces field).
