@@ -4,10 +4,16 @@
   "description": "Rank outdated npm/pnpm/yarn dependencies by blast radius, not alphabet.",
   "license": "MIT",
   "type": "module",
-  "private": true,
+  "private": false,
   "bin": {
     "blastradius": "dist/cli.js"
   },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "engines": {
     "node": ">=18"
   },

@@ -1,5 +1,7 @@
 # blastradius
 
+[![CI](https://github.com/rocksolid-dev-bot/blastradius/actions/workflows/ci.yml/badge.svg)](https://github.com/rocksolid-dev-bot/blastradius/actions/workflows/ci.yml)
+
 Ranks outdated dependencies by how much of your code actually touches them, not
 alphabetically and not by version-jump size alone. Reads npm, pnpm, and yarn classic
 lockfiles.
@@ -191,15 +193,11 @@ Full detail: [`docs/exit-codes.md`](docs/exit-codes.md).
 
 ## CI
 
-```yaml
-- uses: actions/checkout@v4
-- uses: actions/setup-node@v4
-  with:
-    node-version: 18
-- run: npm ci
-- run: npm run build
-- run: node dist/cli.js --fail-on review .
-```
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to `main` and every
+pull request: `npm ci`, `npx tsc --noEmit`, `npm test`, then `npm run build` and
+`node dist/cli.js --help` as a smoke test of the built binary — on Node 18 (the floor in
+`engines`) and Node 22 (proves support isn't accidentally 18-only). No step touches the network
+beyond npm itself; the suite mocks the registry.
 
 ## What it does not do
 
