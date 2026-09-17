@@ -3,9 +3,17 @@ import type { DeclaredDependency } from "./packageJson.js";
 import { extractImports, type SkippedImport } from "./imports.js";
 import { walkSourceFiles } from "./walk.js";
 
+export interface FileUsage {
+  file: string;
+  /** Named symbols this file imports, plus "default" / "* (namespace)" markers when used. */
+  symbols: string[];
+}
+
 export interface PackageUsage {
   files: string[];
   symbols: string[];
+  /** Per-file breakdown of which symbols each importing file uses — `--explain`'s file list. */
+  perFile: FileUsage[];
   defaultImport: boolean;
   namespaceImport: boolean;
   /** True only when every import of this package in the codebase is type-only. */
@@ -24,9 +32,16 @@ export interface UsageMap {
   skipped: SkippedImport[];
 }
 
+interface MutableFileUsage {
+  symbols: Set<string>;
+  defaultImport: boolean;
+  namespaceImport: boolean;
+}
+
 interface MutablePackageUsage {
   files: Set<string>;
   symbols: Set<string>;
+  perFile: Map<string, MutableFileUsage>;
   defaultImport: boolean;
   namespaceImport: boolean;
   allTypeOnly: boolean;
@@ -50,22 +65,42 @@ export function buildUsageMap(root: string, declaredDeps: DeclaredDependency[]):
     for (const record of imports) {
       let entry = acc.get(record.package);
       if (!entry) {
-        entry = { files: new Set(), symbols: new Set(), defaultImport: false, namespaceImport: false, allTypeOnly: true };
+        entry = { files: new Set(), symbols: new Set(), perFile: new Map(), defaultImport: false, namespaceImport: false, allTypeOnly: true };
         acc.set(record.package, entry);
       }
-      entry.files.add(relative(root, record.file).split("\\").join("/"));
+      const relFile = relative(root, record.file).split("\\").join("/");
+      entry.files.add(relFile);
       for (const symbol of record.namedSymbols) entry.symbols.add(symbol);
       if (record.defaultImport) entry.defaultImport = true;
       if (record.namespaceImport) entry.namespaceImport = true;
       if (!record.typeOnly) entry.allTypeOnly = false;
+
+      let fileEntry = entry.perFile.get(relFile);
+      if (!fileEntry) {
+        fileEntry = { symbols: new Set(), defaultImport: false, namespaceImport: false };
+        entry.perFile.set(relFile, fileEntry);
+      }
+      for (const symbol of record.namedSymbols) fileEntry.symbols.add(symbol);
+      if (record.defaultImport) fileEntry.defaultImport = true;
+      if (record.namespaceImport) fileEntry.namespaceImport = true;
     }
   }
 
   const packages: Record<string, PackageUsage> = {};
   for (const [pkg, entry] of [...acc.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    const perFile: FileUsage[] = [...entry.perFile.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([file, fileEntry]) => {
+        const symbols = [...fileEntry.symbols].sort();
+        if (fileEntry.defaultImport) symbols.unshift("default");
+        if (fileEntry.namespaceImport) symbols.push("* (namespace)");
+        return { file, symbols };
+      });
+
     packages[pkg] = {
       files: [...entry.files].sort(),
       symbols: [...entry.symbols].sort(),
+      perFile,
       defaultImport: entry.defaultImport,
       namespaceImport: entry.namespaceImport,
       typeOnly: entry.allTypeOnly,

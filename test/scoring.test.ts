@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { scoreDependency } from "../src/scoring.js";
+import { scoreDependency, type ScoreResult } from "../src/scoring.js";
 import type { PackageUsage } from "../src/usageMap.js";
+
+function component(result: ScoreResult, label: string): number {
+  return result.breakdown.components.find((c) => c.label === label)?.value ?? 0;
+}
 
 function usage(overrides: Partial<PackageUsage> = {}): PackageUsage {
   return {
@@ -64,8 +68,8 @@ describe("scoreDependency", () => {
     });
 
     expect(defaultOnly.score).toBeGreaterThan(noUsage.score);
-    expect(defaultOnly.breakdown.symbols).toBe(2); // 1 (default) * SYMBOLS_WEIGHT_PER_SYMBOL
-    expect(noUsage.breakdown.symbols).toBe(0);
+    expect(component(defaultOnly, "symbols")).toBe(2); // 1 (default) * SYMBOLS_WEIGHT_PER_SYMBOL
+    expect(component(noUsage, "symbols")).toBe(0);
   });
 
   it("namespaceImport's flat +10 is exactly what pushes a score across the review boundary", () => {
@@ -86,11 +90,11 @@ describe("scoreDependency", () => {
       usage: usage({ files: ["a.ts"], symbols: ["x", "y", "z"], namespaceImport: true }),
     });
 
-    expect(withoutNamespace.breakdown.namespace).toBe(0);
+    expect(component(withoutNamespace, "namespace")).toBe(0);
     expect(withoutNamespace.score).toBe(19);
     expect(withoutNamespace.band).toBe("ok");
 
-    expect(withNamespace.breakdown.namespace).toBe(10);
+    expect(component(withNamespace, "namespace")).toBe(10);
     expect(withNamespace.score).toBe(29);
     expect(withNamespace.band).toBe("review");
   });
@@ -130,5 +134,36 @@ describe("scoreDependency", () => {
     });
 
     expect(deprecatedPatch.score).toBeGreaterThan(patch.score);
+  });
+
+  it("the breakdown never drifts: components summed then multiplied equals the reported total, across fixtures", () => {
+    const fixtures = [
+      scoreDependency({
+        jump: "major",
+        deprecated: true,
+        declared: true,
+        usage: usage({ files: Array.from({ length: 8 }, (_, i) => `file${i}.ts`), namespaceImport: true }),
+      }),
+      scoreDependency({
+        jump: "prerelease",
+        deprecated: false,
+        declared: true,
+        usage: usage({ files: ["a.ts"], symbols: ["x", "y", "z"], namespaceImport: true }),
+      }),
+      scoreDependency({
+        jump: "patch",
+        deprecated: false,
+        declared: true,
+        usage: usage({ files: ["a.ts"], symbols: [], defaultImport: true }),
+      }),
+    ];
+
+    expect(fixtures.length).toBeGreaterThanOrEqual(3);
+    for (const result of fixtures) {
+      const sum = result.breakdown.components.reduce((acc, c) => acc + c.value, 0);
+      const product = result.breakdown.multipliers.reduce((acc, m) => acc * m.value, 1);
+      expect(Math.round(sum * product)).toBe(result.breakdown.total);
+      expect(result.breakdown.total).toBe(result.score);
+    }
   });
 });
