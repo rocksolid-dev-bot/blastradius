@@ -78,6 +78,24 @@ describe("readPnpmLockfile", () => {
   });
 });
 
+describe("readPnpmLockfile against a real pnpm-generated lockfile (not hand-shaped)", () => {
+  // test/fixtures/pnpm-real/pnpm-lock.yaml was produced by a real `pnpm install`
+  // (pnpm 8.15.9) against real npm-registry packages -- see the fixture's own
+  // README.md for exactly how it was generated and how to regenerate it. Every
+  // prior pnpm fixture in this suite was hand-written; this is the first one a
+  // package manager actually emitted.
+  const realPnpmDir = join(here, "fixtures", "pnpm-real");
+
+  it("resolves all four real dependencies at the exact versions the lockfile declares", () => {
+    const installed = readPnpmLockfile(realPnpmDir);
+    expect(installed.get("@types/node")).toBe("20.14.0");
+    expect(installed.get("left-pad")).toBe("1.3.0");
+    expect(installed.get("react")).toBe("18.2.0");
+    expect(installed.get("react-dom")).toBe("18.2.0");
+    expect(installed.size).toBe(4);
+  });
+});
+
 describe("readYarnLockfile", () => {
   it("resolves top-level installed versions from a real yarn classic v1 lockfile, same map shape as npm", () => {
     const installed = readYarnLockfile(yarnFixtureDir);
@@ -108,6 +126,22 @@ describe("readYarnLockfile", () => {
     }
     expect(thrown).toBeInstanceOf(UnsupportedLockfileError);
     expect((thrown as Error).message).toContain("yarn.lock");
+  });
+});
+
+describe("readYarnLockfile against a real yarn-generated lockfile (not hand-shaped)", () => {
+  // test/fixtures/yarn-real/yarn.lock was produced by a real `yarn install`
+  // (yarn classic 1.22.22) against the same three real packages as
+  // test/fixtures/pnpm-real -- see the fixture's own README.md.
+  const realYarnDir = join(here, "fixtures", "yarn-real");
+
+  it("resolves all four real dependencies at the exact versions the lockfile declares", () => {
+    const installed = readYarnLockfile(realYarnDir);
+    expect(installed.get("@types/node")).toBe("20.14.0");
+    expect(installed.get("left-pad")).toBe("1.3.0");
+    expect(installed.get("react")).toBe("18.2.0");
+    expect(installed.get("react-dom")).toBe("18.2.0");
+    expect(installed.size).toBe(4);
   });
 });
 

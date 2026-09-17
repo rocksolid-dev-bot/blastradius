@@ -3,6 +3,23 @@ import { join } from "node:path";
 import type { LockfileReader } from "./types.js";
 import { UnsupportedLockfileError } from "./types.js";
 
+/**
+ * The set of package names declared directly in `package.json`'s
+ * `dependencies` + `devDependencies` (not the lockfile) — used to filter a
+ * flat yarn.lock's entries down to top-level packages only, since yarn v1's
+ * `yarn.lock` has no structural distinction between a direct dependency and
+ * a transitive one (unlike npm's `packages` map or pnpm's `importers:`
+ * block, which both mark the root project's own dependencies explicitly).
+ */
+function declaredTopLevelNames(dir: string): Set<string> {
+  const pkgPath = join(dir, "package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
+  return new Set([...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.devDependencies ?? {})]);
+}
+
 const CLASSIC_HEADER_RE = /^# yarn lockfile v1/m;
 const BERRY_METADATA_RE = /^__metadata:/m;
 
@@ -29,9 +46,18 @@ function packageNameFromSpecifier(spec: string): string {
 
 /**
  * Reads a classic yarn v1 `yarn.lock` and returns package name -> resolved
- * version for every entry. One entry may declare several comma-separated
- * specifiers for the same resolved package — only the first is needed to
- * recover the name.
+ * version for the root project's direct dependencies (production + dev) —
+ * the same contract `readNpmLockfile`/`readPnpmLockfile` promise. One entry
+ * may declare several comma-separated specifiers for the same resolved
+ * package — only the first is needed to recover the name.
+ *
+ * Found by day 9's real-fixture check (`test/fixtures/yarn-real`): without
+ * the `package.json` cross-reference below, this used to return an entry
+ * for *every* block in the file, direct or transitive alike — a five-line
+ * project with `react-dom` came back with 8 "installed" packages instead
+ * of 4, because yarn.lock's flat shape has no structural marker for "this
+ * is a top-level dependency" the way npm's `packages` map or pnpm's
+ * `importers:` block do.
  *
  * Refuses explicitly (throws `UnsupportedLockfileError`) rather than
  * guessing when the file carries a berry `__metadata:` block, or matches
@@ -75,6 +101,11 @@ export const readYarnLockfile: LockfileReader = (dir) => {
         currentName = null;
       }
     }
+  }
+
+  const topLevel = declaredTopLevelNames(dir);
+  for (const name of installed.keys()) {
+    if (!topLevel.has(name)) installed.delete(name);
   }
   return installed;
 };

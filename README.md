@@ -180,6 +180,18 @@ Yarn classic (`# yarn lockfile v1`) works the same way. Yarn berry (`__metadata:
 pnpm `lockfileVersion` outside 6.x/9.x are refused explicitly (exit `2`, naming the file and the
 version/shape found) rather than half-parsed on a guess.
 
+**Both readers are now checked against lockfiles a package manager actually produced, not just
+hand-built fixtures.** `test/fixtures/pnpm-real/` and `test/fixtures/yarn-real/` are a real
+`pnpm install` (pnpm 8.15.9) and a real `yarn install` (yarn classic 1.22.22) against three real
+npm-registry packages — a scoped package (`@types/node`), a package with `peerDependencies`
+(`react-dom`, peer on `react`), and a plain deprecated one (`left-pad`). That check caught a real
+bug: `readYarnLockfile` used to return every entry in `yarn.lock`, direct or transitive alike,
+because yarn's flat v1 format has no structural marker distinguishing them the way npm's
+`packages` map and pnpm's `importers:` block both do — a five-dependency project's "installed"
+map came back with 8 entries instead of 4. Fixed by cross-referencing `package.json`'s own
+`dependencies`/`devDependencies` keys, the same top-level-only contract the npm and pnpm readers
+already held.
+
 ## Scoring
 
 Every declared dependency gets a **score** and a **band** (`ok` / `review` / `urgent`).

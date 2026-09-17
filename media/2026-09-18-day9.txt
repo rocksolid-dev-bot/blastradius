@@ -237,3 +237,96 @@ Exit codes:
   3  monorepo detected and refused (see --root-only)
 == prepush.sh: all steps passed ==
 exit=0
+
+=== Item 2: real lockfiles, generated not hand-shaped ===
+pnpm 8.15.9, yarn 1.22.22 (container is Node 18); managers installed via npm i -g --prefix /tmp/pm, never global/host
+
+pnpm-lock.yaml lockfileVersion: 6.0 (pnpm 8.15.9)
+yarn.lock header: # yarn lockfile v1 (yarn 1.22.22)
+
+$ node dist/cli.js /tmp/real-pnpm
+lockfile: pnpm
+package      declared  installed  latest  jump    files  score  band
+@types/node  20.14.0   20.14.0    26.6.1  unused  0      0      ok  
+left-pad     1.3.0     1.3.0      1.3.0   unused  0      0      ok  
+react        18.2.0    18.2.0     19.3.0  unused  0      0      ok  
+react-dom    18.2.0    18.2.0     19.3.0  unused  0      0      ok  
+exit=0
+
+$ node dist/cli.js /tmp/real-pnpm --json
+{"schemaVersion":1,"dependencies":[{"name":"@types/node","declared":"20.14.0","installed":"20.14.0","latest":"26.6.1","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"left-pad","declared":"1.3.0","installed":"1.3.0","latest":"1.3.0","registryStatus":"ok","deprecated":true,"jump":"patch","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"react","declared":"18.2.0","installed":"18.2.0","latest":"19.3.0","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"react-dom","declared":"18.2.0","installed":"18.2.0","latest":"19.3.0","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"}],"skipped":[]}
+exit=0
+
+$ node dist/cli.js /tmp/real-yarn
+lockfile: yarn
+package      declared  installed  latest  jump    files  score  band
+@types/node  20.14.0   20.14.0    26.6.1  unused  0      0      ok  
+left-pad     1.3.0     1.3.0      1.3.0   unused  0      0      ok  
+react        18.2.0    18.2.0     19.3.0  unused  0      0      ok  
+react-dom    18.2.0    18.2.0     19.3.0  unused  0      0      ok  
+exit=0
+
+$ node dist/cli.js /tmp/real-yarn --json
+{"schemaVersion":1,"dependencies":[{"name":"@types/node","declared":"20.14.0","installed":"20.14.0","latest":"26.6.1","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"left-pad","declared":"1.3.0","installed":"1.3.0","latest":"1.3.0","registryStatus":"ok","deprecated":true,"jump":"patch","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"react","declared":"18.2.0","installed":"18.2.0","latest":"19.3.0","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"react-dom","declared":"18.2.0","installed":"18.2.0","latest":"19.3.0","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"}],"skipped":[]}
+exit=0
+
+=== Item 2: DEFECT FOUND against the real fixtures ===
+readYarnLockfile(test/fixtures/yarn-real) returned 8 entries (all yarn.lock blocks,
+direct + transitive), not the 4 top-level deps in package.json. Failing test added
+first (test/lockfile.test.ts: expected 4, received 8), then fixed by filtering the
+yarn reader's output to package.json's own dependencies+devDependencies keys,
+matching the top-level-only contract readNpmLockfile/readPnpmLockfile already held.
+
+$ npm test (full suite after the fix)
+
+> blastradius@0.2.0 test
+> vitest run
+
+
+ RUN  v2.1.9 /work/code
+
+ ✓ test/lockfile.test.ts (16 tests) 27ms
+ ✓ test/exit-codes.test.ts (21 tests) 56ms
+ ✓ test/scoring.test.ts (10 tests) 14ms
+ ✓ test/failon-monorepo.test.ts (12 tests) 53ms
+ ✓ test/cli.test.ts (5 tests) 53ms
+ ✓ test/registry.test.ts (5 tests) 52ms
+ ✓ test/report.test.ts (3 tests) 40ms
+ ✓ test/explain.test.ts (2 tests) 43ms
+ ✓ test/semver.test.ts (27 tests) 12ms
+ ✓ test/deps.test.ts (1 test) 10ms
+ ✓ test/table.test.ts (7 tests) 11ms
+ ✓ test/usageMap.test.ts (2 tests) 42ms
+ ✓ test/bin.test.ts (1 test) 885ms
+   ✓ bin entry point via symlink (the way npm's `bin` starts it) > runs and prints usage when invoked through a symlink 883ms
+
+ Test Files  13 passed (13)
+      Tests  112 passed (112)
+   Start at  23:09:40
+   Duration  9.39s (transform 367ms, setup 0ms, collect 3.35s, tests 1.30s, environment 4ms, prepare 1.18s)
+
+exit=0
+
+=== re-run against both real fixtures after the fix ===
+$ node dist/cli.js /tmp/real-yarn
+lockfile: yarn
+package      declared  installed  latest  jump    files  score  band
+@types/node  20.14.0   20.14.0    26.6.1  unused  0      0      ok  
+left-pad     1.3.0     1.3.0      1.3.0   unused  0      0      ok  
+react        18.2.0    18.2.0     19.3.0  unused  0      0      ok  
+react-dom    18.2.0    18.2.0     19.3.0  unused  0      0      ok  
+exit=0
+$ node dist/cli.js /tmp/real-pnpm
+lockfile: pnpm
+package      declared  installed  latest  jump    files  score  band
+@types/node  20.14.0   20.14.0    26.6.1  unused  0      0      ok  
+left-pad     1.3.0     1.3.0      1.3.0   unused  0      0      ok  
+react        18.2.0    18.2.0     19.3.0  unused  0      0      ok  
+react-dom    18.2.0    18.2.0     19.3.0  unused  0      0      ok  
+exit=0
+$ node dist/cli.js /tmp/real-yarn --json
+{"schemaVersion":1,"dependencies":[{"name":"@types/node","declared":"20.14.0","installed":"20.14.0","latest":"26.6.1","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"left-pad","declared":"1.3.0","installed":"1.3.0","latest":"1.3.0","registryStatus":"ok","deprecated":true,"jump":"patch","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"react","declared":"18.2.0","installed":"18.2.0","latest":"19.3.0","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"react-dom","declared":"18.2.0","installed":"18.2.0","latest":"19.3.0","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"}],"skipped":[]}
+exit=0
+$ node dist/cli.js /tmp/real-pnpm --json
+{"schemaVersion":1,"dependencies":[{"name":"@types/node","declared":"20.14.0","installed":"20.14.0","latest":"26.6.1","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"left-pad","declared":"1.3.0","installed":"1.3.0","latest":"1.3.0","registryStatus":"ok","deprecated":true,"jump":"patch","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"react","declared":"18.2.0","installed":"18.2.0","latest":"19.3.0","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"},{"name":"react-dom","declared":"18.2.0","installed":"18.2.0","latest":"19.3.0","registryStatus":"ok","deprecated":false,"jump":"major","dev":false,"files":[],"symbols":[],"namespaceImport":false,"typeOnly":false,"devOnly":false,"unused":true,"score":0,"band":"ok"}],"skipped":[]}
+exit=0
