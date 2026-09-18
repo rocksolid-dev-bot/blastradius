@@ -127,6 +127,51 @@ dev-only package would be the clearest case), compared band-for-band with the sa
 treated as a runtime dependency, to see whether the halved band actually undersells the risk or
 correctly reflects lower urgency.
 
+## Item 2 — the tapable/es-module-lexer ordering: tried, reverted, evidence kept (day 11)
+
+Open since day 9: on `webpack/webpack`, `es-module-lexer` (major jump, 2 files) scores 46 and
+outranks `tapable` (patch jump, imported in 38 files) at 40 — for a maintainer deciding what to
+read first, `tapable`'s breadth arguably matters more than a major-version label on two files.
+
+**Method: red test, one weight change, real-repo collateral gate, decide.**
+
+1. **Red test.** `test/scoring.test.ts` asserts a `tapable`-shape (patch jump, 38 files, symbol
+   usage capped at the real score's implied minimum) should outrank an `es-module-lexer`-shape
+   (major jump, 2 files). Both reproduce the real day-9 scores exactly (40 and 46) before the
+   ordering assertion runs, confirming the shapes are right. It failed as expected: `expected 40
+   to be greater than 46`.
+2. **One weight change.** `FILES_WEIGHT_CAP` raised from 20 to 30 — the mechanism named in the
+   disagreement: 38 files and 7 files are indistinguishable under a 20-point cap (both hit it),
+   so raising the cap lets high-breadth packages separate from low-breadth ones again. With the
+   cap at 30, `tapable` = patch(5) + files(30, capped) + symbols(15, capped) = **50**, now above
+   `es-module-lexer`'s 46.
+3. **The real gate: collateral, on a fresh clone.** Re-cloned `webpack/webpack` and
+   `istanbuljs/nyc` fresh (current heads, not the day-9/day-10 clones, which were not kept) and
+   ran the built tool before and after the cap change.
+   - `nyc`: **zero** band crossings — its `urgent` hits (`find-cache-dir`, `make-dir`) and every
+     `review` package were already scored on the deprecated/jump/namespace routes, none of which
+     touch the file cap at 6-or-fewer files.
+   - `webpack`: **three** band crossings, not one.
+     - `tapable`: review (40) → **urgent** (50). This is the fix working — the intended package
+       moves, and moves convincingly, not just past `es-module-lexer`.
+     - `lodash`: ok (19) → **review** (24). Not part of the original disagreement — a heavily
+       imported patch-jump package with no deprecation or namespace signal, pushed into `review`
+       purely by the cap raise.
+     - `memfs`: ok (18) → **review** (23). Same shape as `lodash`: collateral, not intent.
+4. **Decision: revert.** Two of three crossings are packages nobody was arguing about — exactly
+   the failure mode TODAY.md named up front: *"a fix that also moves packages across a band
+   boundary is a band retune in disguise."* Fixing one named disagreement by silently reclassifying
+   `lodash` and `memfs` is not a defensible trade inside one cycle with no further review. `git
+   diff --stat src/scoring.ts` for this item is empty; the red test is kept as `it.skip` in
+   `test/scoring.test.ts` with the real numbers in its comment, so the disagreement and this
+   evidence stay pinned rather than lost, for whichever future cycle revisits it — most likely
+   together with the `DEV_ONLY_MULTIPLIER` question above, since both are file/breadth-adjacent
+   weight questions and a future cycle should not spend two separate single-weight-change budgets
+   re-deriving overlapping collateral.
+
+`docs/scoring.md` was not touched — no weight changed, so source-of-truth and prose stay in sync
+by default, not by a matching edit.
+
 ## Regenerating this data
 
 ```

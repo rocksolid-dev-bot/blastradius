@@ -227,4 +227,44 @@ describe("scoreDependency", () => {
       expect(result.breakdown.total).toBe(result.score);
     }
   });
+
+  // --- ordering disagreement: breadth vs. jump label (day 9/webpack, decided day 11, item 2) --
+  // Open since day 9: on webpack/webpack, `es-module-lexer` (major jump, 2 files) scored 46 and
+  // outranked `tapable` (patch jump, imported in 38 files) at 40. Real shapes re-derived from
+  // media/2026-09-18-day9.txt's table output (files/jump/score columns): tapable's files column
+  // (38) capped at 20, plus its patch jump (5), leaves 15 unaccounted for to reach its score of
+  // 40 -- exactly SYMBOLS_WEIGHT_CAP, so its symbol usage is real and hits the cap (the day-9
+  // capture is table-only for webpack, no --json line, so the exact symbol count above the
+  // cap-reaching minimum of 8 is not recoverable from it -- 8 is the minimum that reproduces the
+  // real score and is used here). es-module-lexer's 46 = major(40) + 2 files(6) exactly, no
+  // symbols. This asserts the disagreement a maintainer would flag: 38-file breadth ought to
+  // outrank a 2-file major-version label.
+  // Candidate fix tried (day 11): raising FILES_WEIGHT_CAP from 20 so tapable's capped files
+  // component grows past the gap. Reverted -- see "Item 2" in docs/calibration.md for the full
+  // collateral evidence (a fresh webpack clone: raising the cap to 30 does flip tapable review(40)
+  // -> urgent(50), which fixes the ordering, but it also silently re-bands two unrelated packages,
+  // lodash ok(19)->review(24) and memfs ok(18)->review(23) -- exactly the "band retune in
+  // disguise" this method exists to catch. Kept skipped, not deleted, so the disagreement and its
+  // real numbers stay pinned for whichever future cycle picks this up.
+  it.skip("ordering: tapable's 38-file patch-jump breadth should outrank es-module-lexer's 2-file major jump", () => {
+    const tapable = scoreDependency({
+      jump: "patch",
+      deprecated: false,
+      declared: true,
+      usage: usage({ files: Array.from({ length: 38 }, (_, i) => `f${i}.ts`), symbols: Array.from({ length: 8 }, (_, i) => `s${i}`) }),
+    });
+    const esModuleLexer = scoreDependency({
+      jump: "major",
+      deprecated: false,
+      declared: true,
+      usage: usage({ files: ["a.ts", "b.ts"], symbols: [] }),
+    });
+
+    // Reproduces the real day-9 scores exactly, confirming the shapes are right
+    // before asserting the disputed ordering.
+    expect(tapable.score).toBe(40);
+    expect(esModuleLexer.score).toBe(46);
+
+    expect(tapable.score).toBeGreaterThan(esModuleLexer.score);
+  });
 });

@@ -1,0 +1,24 @@
+=== Item 2: tapable/es-module-lexer ordering, collateral check ===
+Fresh clones (current heads, day 9/10 clones not retained):
+  git clone --depth 1 https://github.com/webpack/webpack.git /tmp/calib11/webpack
+  git clone --depth 1 https://github.com/istanbuljs/nyc.git /tmp/calib11/nyc
+
+Candidate change: FILES_WEIGHT_CAP 20 -> 30
+
+Before (FILES_WEIGHT_CAP=20):
+  webpack bands: {'review': 17, 'ok': 103}
+  nyc bands:     {'urgent': 2, 'review': 12, 'ok': 22}
+
+After (FILES_WEIGHT_CAP=30):
+  webpack bands: {'urgent': 1, 'review': 18, 'ok': 101}
+  nyc bands:     {'urgent': 2, 'review': 12, 'ok': 22}   (unchanged)
+
+webpack band crossings (3):
+  tapable   review(40) -> urgent(50)   -- the intended fix
+  lodash    ok(19)     -> review(24)   -- collateral, unrelated to the disagreement
+  memfs     ok(18)     -> review(23)   -- collateral, unrelated to the disagreement
+
+Decision: REVERTED. Two of three crossings are unrelated packages silently re-banded --
+exactly the "band retune in disguise" failure mode named in TODAY.md. src/scoring.ts
+unchanged (git diff --stat empty). Red test kept as it.skip in test/scoring.test.ts with
+these numbers in its comment. Full writeup: docs/calibration.md, "Item 2" section.
