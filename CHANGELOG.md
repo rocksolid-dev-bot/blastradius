@@ -4,6 +4,53 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] - 2026-09-18
+
+The closing release for this project. No feature was added this cycle — everything below is
+verification and correction of work already shipped in 0.2.0.
+
+### Fixed
+
+- **`urgent`-band reachability is now tested, not just observed.** Day 9 found the `urgent`
+  band never fired across 184 dependencies from five actively maintained repos and left open
+  whether the 50-point threshold was set too high or the sample simply had no abandoned
+  dependencies in it. `test/scoring.test.ts` now pins the three reachable routes as asserted
+  fixtures (`deprecated(30) + files capped at 20 = 50`; `major(40) + 1 file(3) +
+  namespace(10) = 53`; the same major jump one component short at `49`, staying `review`), and
+  a second, deliberately older/smaller-biased sample (`istanbuljs/nyc`) made `urgent` fire for
+  real: `find-cache-dir` at 73 (deprecated + major jump, one file — a fourth, previously
+  unenumerated route) and `make-dir` at 58 (major jump, six-file usage breadth). Day 9's null
+  result was the sample, not the threshold. Full arithmetic and both calibration runs in
+  `docs/calibration.md`.
+- **Two causal sentences in `docs/calibration.md` corrected against their own cited data.**
+  `find-cache-dir`'s 73 was mislabeled "the deprecated route"; it is deprecated *and* a major
+  jump on one file (`30 + 40 + 3`), a third route the boundary-arithmetic section had not
+  enumerated. `yeoman-assert`'s 28 was blamed on "thin usage"; its usage is real (eight
+  importing files, raw score 55 — over the threshold), and what actually halves it into
+  `review` is the dev-only `×0.5` multiplier, which the original sentence never mentioned.
+- **The day-10 capture the doc's strongest provenance claim depended on was never committed.**
+  `docs/calibration.md` cited `media/2026-09-18-day10.txt` from a path the shipped repo did not
+  contain — the file existed only in the workspace, one directory above the repo the container
+  mounts. Now committed at `media/2026-09-18-day10.txt`.
+
+### Investigated, not changed
+
+- **The `tapable`/`es-module-lexer` ordering disagreement (open since day 9): tried, reverted.**
+  On `webpack/webpack`, a 2-file major-version bump outranks a 38-file patch bump, because both
+  hit the same file-breadth cap. Raising `FILES_WEIGHT_CAP` from 20 to 30 does fix the ordering
+  (`tapable` review→urgent, correctly above `es-module-lexer`), but a real-repo collateral check
+  against a fresh `webpack` clone found it also silently re-bands two unrelated packages
+  (`lodash`, `memfs`, both `ok→review`) — a band retune in disguise. Reverted;
+  `src/scoring.ts` is unchanged from 0.2.0. The red test, the real numbers, and the full
+  collateral evidence are kept (`test/scoring.test.ts`, `it.skip`; `docs/calibration.md`) for
+  whichever future project picks this back up.
+- **Whether `DEV_ONLY_MULTIPLIER` (0.5) is right for a deprecated package.** Found while fixing
+  the `yeoman-assert` sentence above: a deprecated package imported in eight files scores 55
+  raw — solidly `urgent` — but lands at 28 solely for being a dev dependency, even though dev
+  dependencies still execute in CI and on every contributor's machine. Written down as an open
+  question in `docs/calibration.md`, deliberately not changed this cycle (one weight-change
+  budget already spent above).
+
 ## [0.2.0] - 2026-09-18
 
 ### Changed

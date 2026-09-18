@@ -22,3 +22,82 @@ Decision: REVERTED. Two of three crossings are unrelated packages silently re-ba
 exactly the "band retune in disguise" failure mode named in TODAY.md. src/scoring.ts
 unchanged (git diff --stat empty). Red test kept as it.skip in test/scoring.test.ts with
 these numbers in its comment. Full writeup: docs/calibration.md, "Item 2" section.
+== npm ci ==
+
+added 50 packages, and audited 51 packages in 2s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+5 vulnerabilities (3 moderate, 1 high, 1 critical)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+== npx tsc --noEmit ==
+== npm run build ==
+
+> blastradius@0.2.0 build
+> tsc -p tsconfig.json
+
+== npm test ==
+
+> blastradius@0.2.0 test
+> vitest run
+
+
+ RUN  v2.1.9 /work/code
+
+ ✓ test/scoring.test.ts (14 tests | 1 skipped) 17ms
+ ✓ test/lockfile.test.ts (16 tests) 25ms
+ ✓ test/exit-codes.test.ts (21 tests) 72ms
+ ✓ test/failon-monorepo.test.ts (12 tests) 63ms
+ ✓ test/cli.test.ts (5 tests) 50ms
+ ✓ test/registry.test.ts (5 tests) 25ms
+ ✓ test/report.test.ts (3 tests) 39ms
+ ✓ test/explain.test.ts (2 tests) 44ms
+ ✓ test/semver.test.ts (27 tests) 23ms
+ ✓ test/deps.test.ts (1 test) 9ms
+ ✓ test/table.test.ts (7 tests) 7ms
+ ✓ test/usageMap.test.ts (2 tests) 48ms
+ ✓ test/bin.test.ts (1 test) 724ms
+   ✓ bin entry point via symlink (the way npm's `bin` starts it) > runs and prints usage when invoked through a symlink 723ms
+
+ Test Files  13 passed (13)
+      Tests  115 passed | 1 skipped (116)
+   Start at  19:21:35
+   Duration  9.99s (transform 484ms, setup 0ms, collect 3.98s, tests 1.15s, environment 5ms, prepare 1.23s)
+
+== install into throwaway prefix and invoke the bin shim ==
+
+added 2 packages in 1s
+$ /tmp/br-prefix/bin/blastradius --help
+blastradius — rank outdated dependencies by blast radius, not alphabet
+
+Usage:
+  blastradius [dir]                    Ranked table: registry + usage + score (npm, pnpm, or yarn classic)
+  blastradius --json [dir]             Same report as machine-readable JSON on stdout
+  blastradius --dry [dir]              Print declared vs. installed versions only, no registry call
+  blastradius --fail-on <band> [dir]   Exit 1 if any dependency scores at or above <band> (review|urgent)
+  blastradius --root-only [dir]        Monorepo escape hatch: analyze the root package.json only
+  blastradius --explain <pkg> [dir]    Print the score breakdown and per-file usage for one package
+  blastradius --help                   Show this help and exit
+
+[dir] defaults to the current directory. Registry lookups are cached for 24h
+in $XDG_CACHE_HOME/blastradius (or ~/.cache/blastradius); a lookup that
+fails for any reason (offline, timeout, 429/5xx, bad body) renders as
+"unknown" rather than crashing the run.
+
+A workspace root (`workspaces` in package.json, pnpm-workspace.yaml, or
+lerna.json) is refused by default — half-support produces a confidently
+wrong answer. Pass --root-only to analyze the root package.json alone.
+
+Exit codes:
+  0  success — --fail-on's band was not reached (or --fail-on was not given)
+  1  --fail-on's band was reached by at least one dependency
+  2  usage error — unknown flag, invalid --fail-on value, or no package.json found
+  3  monorepo detected and refused (see --root-only)
+== prepush.sh: all steps passed ==
+$ echo "exit=$?"
+exit=0
