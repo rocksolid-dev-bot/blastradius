@@ -44,6 +44,43 @@ prioritize first. That is a real finding about the semver-jump weight versus the
 weight, worth citing when a future cycle considers retuning — but retuning is explicitly not
 this cycle's job.
 
+## Boundary arithmetic: is `urgent` unreachable, or just unsampled? (day 10)
+
+Day 9 found `urgent` never fired across 184 dependencies and left the question open: is the
+50-point threshold set too high, or did the sample simply contain no abandoned dependencies?
+This section answers with arithmetic, before touching a new sample — free, and it says which
+suspect (threshold vs. sample) is more plausible before 1c goes looking for evidence either way.
+
+**Reachable routes to `urgent` (score ≥ 50), minimum input per route** (weights from
+`docs/scoring.md`; a package with zero usage files is flagged `unused` and never scored, so
+every route below needs at least one file, which unavoidably contributes its own `+3`):
+
+- **Deprecated route:** `deprecated (30) + files capped at 20` = exactly **50**. The cap needs
+  7 files (`7 × 3 = 21`, capped to 20); no symbols, namespace, or version jump required at all
+  — a deprecated package touched in 7+ files is `urgent` on the deprecation weight and file
+  breadth alone.
+- **Major-jump-plus-usage-breadth route:** `major (40) + 1 file (3) + namespace import (10)` =
+  **53**. A single namespace import (`import * as x`, whole-module usage) is enough breadth to
+  push a bare major bump over the line.
+- **Just under the line, for contrast:** `major (40) + 1 file (3) + 3 symbols (6)` = **49** —
+  stays `review`. The same major jump with named-symbol usage instead of a namespace import is
+  one component short of `urgent`; a fourth symbol (`+2`) or a second file (`+3`) would cross it.
+
+All three are now asserted fixtures in `test/scoring.test.ts` (day 10, item 1a), not just
+arithmetic on paper.
+
+**Reading the day-9 top-scorer distribution (48, 46, 45, 40, 37, 35, 31, 27, 20) against these
+routes:** every one of those top scorers is a major-or-minor jump with real usage but **no
+deprecation flag and no namespace import** — the two components that make the routes above
+cheap to reach. The distribution clusters at 40–48 because a major jump (40) plus a small amount
+of file/symbol breadth (capped well below the file/symbol ceilings) lands in exactly that range;
+none of those five repos' top dependencies happened to also be flagged deprecated or imported via
+`import * as x`. That reads as **a sample with no abandoned dependencies in it, not a threshold
+set one usage step too high** — reaching `urgent` from a plain major jump needs real additional
+breadth (a 7th file, a namespace import, several more symbols), and the day-9 sample's top
+dependencies simply didn't carry that combination. 1c decides this by aiming a differently-biased
+sample at the same tool rather than re-deriving these numbers.
+
 ## Regenerating this data
 
 ```
