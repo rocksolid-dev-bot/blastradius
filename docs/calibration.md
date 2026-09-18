@@ -81,6 +81,31 @@ breadth (a 7th file, a namespace import, several more symbols), and the day-9 sa
 dependencies simply didn't carry that combination. 1c decides this by aiming a differently-biased
 sample at the same tool rather than re-deriving these numbers.
 
+## Second sample, opposite selection bias: does `urgent` ever fire? (day 10, item 1c)
+
+Day 9 sampled five actively maintained, popular repos. This aims the opposite bias —
+older/smaller tooling, specifically looking for a registry-flagged-deprecated dependency — at
+the same tool, unchanged. Cloned read-only into `/tmp/calib10/`, nothing copied into this repo.
+Every number below is read off `media/2026-09-18-day10.txt`.
+
+| Repo | License | Lockfile | Deps analyzed | ok | review | urgent | Top 3 scorers | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| [sahat/hackathon-starter](https://github.com/sahat/hackathon-starter) | MIT | npm, `lockfileVersion: 3` | 59 (of 79 declared; 20 unused) | 57 | 2 | 0 | `mongoose`:25, `validator`:25, `passport`:17 | No `urgent`: this repo turned out to be actively maintained under the hood (npm v3 lockfile, current major versions on most deps) despite being an old, well-known boilerplate name — a reminder that repo age/fame doesn't guarantee stale dependencies. |
+| [istanbuljs/nyc](https://github.com/istanbuljs/nyc) | ISC | npm, `lockfileVersion: 3` | 34 (of 36 declared; 2 unused) | 20 | 12 | **2** | `find-cache-dir`:73, `make-dir`:58, `yargs`:49 | **`urgent` fired, twice, on exactly the two routes named in the boundary arithmetic above.** `find-cache-dir` is registry-flagged `deprecated: true` *and* a major-version jump behind (30 deprecated + 40 jump + files, capped, landing at 73) — the deprecated route. `make-dir` is not deprecated but is a major jump imported across 6 files (40 jump + 18 files-weight = 58) — the major-jump-plus-usage-breadth route, with real breadth this time instead of the boundary fixture's minimum. Both are correct: `nyc` (a `gulp`-era-adjacent coverage tool, unmaintained relative to its own transitive stack) is exactly the kind of project where a maintainer would want these flagged first. |
+| [yeoman/generator-webapp](https://github.com/yeoman/generator-webapp) | BSD-2-Clause | yarn classic | 7 (of 16 declared; 9 unused) | 1 | 6 | 0 | `mkdirp`:46, `yeoman-generator`:43, `yosay`:43 | No `urgent`, but close: `yeoman-assert` (score 28) *is* registry-flagged deprecated, yet its patch-only jump and thin usage keep it in `review` — useful negative evidence that deprecation alone, without a jump or real breadth, does not reach the threshold, matching the boundary arithmetic (deprecated (30) alone needs +20 more from files/jump to cross 50). |
+| [voila-dashboards/voila](https://github.com/voila-dashboards/voila) | BSD-3-Clause | yarn classic, but `lerna.json` present | refused, exit `3` | — | — | — | — | Correct refusal, recorded as a result per TODAY.md, not a skip: a `workspaces`/`lerna` monorepo root's own dependency list is not representative, same reasoning as day 9's `react` refusal. |
+
+**Verdict: `urgent` fired.** Across both calibration runs (184 + 34 = 218 dependencies checked),
+the highest score seen before this sample was 48 (day 9); this sample reached 73 and 58, both
+over the 50 threshold, on `istanbuljs/nyc`. `find-cache-dir` (73) is correct and unambiguous —
+registry-deprecated and a major version behind, real production usage. `make-dir` (58) is also
+defensible — six files import a major-version-behind dependency, exactly the "blast radius" this
+tool is named for. Neither the sample selection (older/smaller, deliberately including a
+coverage-tool package likely to carry an abandoned transitive-tooling dependency) nor the score
+arithmetic needed any change to produce a real `urgent` hit; day 9's null result was the sample,
+as the boundary arithmetic above predicted, not the threshold. **This closes item 1 — the
+`urgent` band is now proven reachable by a real repo, not just a fixture.**
+
 ## Regenerating this data
 
 ```
@@ -91,4 +116,15 @@ git clone --depth 1 https://github.com/webpack/webpack.git /tmp/calib/webpack
 git clone --depth 1 https://github.com/facebook/react.git /tmp/calib/react
 node dist/cli.js /tmp/calib/<name>          # table
 node dist/cli.js /tmp/calib/<name> --json   # machine-readable
+```
+
+Day-10 second sample (opposite selection bias):
+
+```
+git clone --depth 1 https://github.com/sahat/hackathon-starter.git /tmp/calib10/hackathon-starter
+git clone --depth 1 https://github.com/istanbuljs/nyc.git /tmp/calib10/nyc
+git clone --depth 1 https://github.com/yeoman/generator-webapp.git /tmp/calib10/generator-webapp
+git clone --depth 1 https://github.com/voila-dashboards/voila.git /tmp/calib10/voila
+node dist/cli.js /tmp/calib10/<name>
+node dist/cli.js /tmp/calib10/<name> --json
 ```
