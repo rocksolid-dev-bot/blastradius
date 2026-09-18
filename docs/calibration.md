@@ -65,9 +65,15 @@ every route below needs at least one file, which unavoidably contributes its own
 - **Just under the line, for contrast:** `major (40) + 1 file (3) + 3 symbols (6)` = **49** —
   stays `review`. The same major jump with named-symbol usage instead of a namespace import is
   one component short of `urgent`; a fourth symbol (`+2`) or a second file (`+3`) would cross it.
+- **Deprecated-plus-major-jump route (added day 11, found by sampling, not derived up front):**
+  `deprecated (30) + major (40) + 1 file (3)` = **73**. Needs no file/symbol breadth at all —
+  the deprecated weight and the major-jump weight alone clear 50 with margin to spare. This is
+  a genuinely separate route from both routes above: it needs neither the 7-file deprecated cap
+  nor a namespace import, just a package that is both deprecated and a major version behind.
 
-All three are now asserted fixtures in `test/scoring.test.ts` (day 10, item 1a), not just
-arithmetic on paper.
+Four combinations are now asserted or observed: three fixtures in `test/scoring.test.ts` (day
+10, item 1a) plus this real-sample route, confirmed below — arithmetic on paper before the
+second sample went looking for evidence.
 
 **Reading the day-9 top-scorer distribution (48, 46, 45, 40, 37, 35, 31, 27, 20) against these
 routes:** every one of those top scorers is a major-or-minor jump with real usage but **no
@@ -91,8 +97,8 @@ Every number below is read off `media/2026-09-18-day10.txt`.
 | Repo | License | Lockfile | Deps analyzed | ok | review | urgent | Top 3 scorers | Verdict |
 |---|---|---|---|---|---|---|---|---|
 | [sahat/hackathon-starter](https://github.com/sahat/hackathon-starter) | MIT | npm, `lockfileVersion: 3` | 59 (of 79 declared; 20 unused) | 57 | 2 | 0 | `mongoose`:25, `validator`:25, `passport`:17 | No `urgent`: this repo turned out to be actively maintained under the hood (npm v3 lockfile, current major versions on most deps) despite being an old, well-known boilerplate name — a reminder that repo age/fame doesn't guarantee stale dependencies. |
-| [istanbuljs/nyc](https://github.com/istanbuljs/nyc) | ISC | npm, `lockfileVersion: 3` | 34 (of 36 declared; 2 unused) | 20 | 12 | **2** | `find-cache-dir`:73, `make-dir`:58, `yargs`:49 | **`urgent` fired, twice, on exactly the two routes named in the boundary arithmetic above.** `find-cache-dir` is registry-flagged `deprecated: true` *and* a major-version jump behind (30 deprecated + 40 jump + files, capped, landing at 73) — the deprecated route. `make-dir` is not deprecated but is a major jump imported across 6 files (40 jump + 18 files-weight = 58) — the major-jump-plus-usage-breadth route, with real breadth this time instead of the boundary fixture's minimum. Both are correct: `nyc` (a `gulp`-era-adjacent coverage tool, unmaintained relative to its own transitive stack) is exactly the kind of project where a maintainer would want these flagged first. |
-| [yeoman/generator-webapp](https://github.com/yeoman/generator-webapp) | BSD-2-Clause | yarn classic | 7 (of 16 declared; 9 unused) | 1 | 6 | 0 | `mkdirp`:46, `yeoman-generator`:43, `yosay`:43 | No `urgent`, but close: `yeoman-assert` (score 28) *is* registry-flagged deprecated, yet its patch-only jump and thin usage keep it in `review` — useful negative evidence that deprecation alone, without a jump or real breadth, does not reach the threshold, matching the boundary arithmetic (deprecated (30) alone needs +20 more from files/jump to cross 50). |
+| [istanbuljs/nyc](https://github.com/istanbuljs/nyc) | ISC | npm, `lockfileVersion: 3` | 34 (of 36 declared; 2 unused) | 20 | 12 | **2** | `find-cache-dir`:73, `make-dir`:58, `yargs`:49 | **`urgent` fired, twice, on exactly the two routes named in the boundary arithmetic above.** `find-cache-dir` is registry-flagged `deprecated: true` *and* a major-version jump behind, imported in exactly **one** file: 30 + 40 + 3 (deprecated + major jump + one file, not the 20 cap) = 73. Deprecated alone (30 + 3 = 33) would have stayed `review` — the major jump is what crosses the line. That makes this a **third** route to `urgent`, not one of the two the boundary-arithmetic section above enumerates (see the added third bullet there): a deprecated-plus-major-jump package needs no file/symbol breadth at all to cross 50. `make-dir` is not deprecated but is a major jump imported across 6 files (40 jump + 18 files-weight = 58) — the major-jump-plus-usage-breadth route, with real breadth this time instead of the boundary fixture's minimum. Both are correct: `nyc` (a `gulp`-era-adjacent coverage tool, unmaintained relative to its own transitive stack) is exactly the kind of project where a maintainer would want these flagged first. |
+| [yeoman/generator-webapp](https://github.com/yeoman/generator-webapp) | BSD-2-Clause | yarn classic | 7 (of 16 declared; 9 unused) | 1 | 6 | 0 | `mkdirp`:46, `yeoman-generator`:43, `yosay`:43 | No `urgent`, but close: `yeoman-assert` (score 28) *is* registry-flagged deprecated and imported in **eight** files, `devOnly: true`: raw = 30 deprecated + 5 patch + 20 (8 files × 3, capped) = 55 — over the threshold on its own. What holds it at 28 is the **dev-only ×0.5 multiplier** alone — not the usage breadth, which is real (eight files): 55 × 0.5 = 27.5, rounding to 28. This is not negative evidence about the threshold; it is evidence about the multiplier, and it raises the open question below. |
 | [voila-dashboards/voila](https://github.com/voila-dashboards/voila) | BSD-3-Clause | yarn classic, but `lerna.json` present | refused, exit `3` | — | — | — | — | Correct refusal, recorded as a result per TODAY.md, not a skip: a `workspaces`/`lerna` monorepo root's own dependency list is not representative, same reasoning as day 9's `react` refusal. |
 
 **Verdict: `urgent` fired.** Across both calibration runs (184 + 34 = 218 dependencies checked),
@@ -105,6 +111,21 @@ coverage-tool package likely to carry an abandoned transitive-tooling dependency
 arithmetic needed any change to produce a real `urgent` hit; day 9's null result was the sample,
 as the boundary arithmetic above predicted, not the threshold. **This closes item 1 — the
 `urgent` band is now proven reachable by a real repo, not just a fixture.**
+
+## Open questions
+
+**Is `DEV_ONLY_MULTIPLIER 0.5` right for a deprecated package?** `yeoman-assert` (above) is
+registry-flagged deprecated, imported in eight files, and scores 55 raw — solidly `urgent` — but
+lands at 28, two bands down, solely because `devOnly: true` halves it. Dev dependencies still
+execute in CI and on every contributor's machine; a deprecated one sitting in eight test files is
+not obviously less worth flagging than a deprecated runtime dependency. This cycle does **not**
+change `DEV_ONLY_MULTIPLIER` — item 2 already spends this cycle's one weight change, and
+changing two weights in the cycle that measured them would produce numbers that only fit their
+own tests. What would settle it: a calibration sample specifically containing deprecated
+dev-only dependencies with known real-world impact (a supply-chain incident in a popular
+dev-only package would be the clearest case), compared band-for-band with the same package
+treated as a runtime dependency, to see whether the halved band actually undersells the risk or
+correctly reflects lower urgency.
 
 ## Regenerating this data
 
