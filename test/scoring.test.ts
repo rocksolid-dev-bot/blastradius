@@ -136,6 +136,67 @@ describe("scoreDependency", () => {
     expect(deprecatedPatch.score).toBeGreaterThan(patch.score);
   });
 
+  // --- urgent band reachability (day 10, item 1a) ---------------------------------
+  // URGENT_THRESHOLD is 50. Weights: major 40 / minor 15 / patch 5 / prerelease 10,
+  // files 3 each capped at 20, symbols 2 each capped at 15, namespace +10 flat,
+  // deprecated +30 flat, type-only x0.3, dev-only x0.5. These pin the minimum input
+  // on each distinct route that reaches 50, plus one case that lands just under it.
+
+  it("deprecated route: deprecated(30) + files capped at 20 reaches urgent at exactly 50", () => {
+    // jump "unknown" contributes 0; 7 files * 3 = 21, capped to 20; no symbols,
+    // no namespace. 30 + 20 = 50, the minimum-file-count input that reaches the cap.
+    const result = scoreDependency({
+      jump: "unknown",
+      deprecated: true,
+      declared: true,
+      usage: usage({ files: Array.from({ length: 7 }, (_, i) => `f${i}.ts`), symbols: [] }),
+    });
+
+    expect(component(result, "deprecated")).toBe(30);
+    expect(component(result, "files")).toBe(20);
+    expect(result.score).toBe(50);
+    expect(result.band).toBe("urgent");
+  });
+
+  it("major-jump-plus-usage-breadth route: major(40) + files(3) + namespace(10) = 53 reaches urgent", () => {
+    // The usage map's own `unused` check requires at least one file (a zero-length
+    // files array is scored 0 and flagged unused, never reaching any band), so the
+    // true minimum non-unused input on this route needs exactly 1 file — its 3-point
+    // contribution is unavoidable, not padding. Namespace import ("import * as x",
+    // whole-module usage) is the breadth signal that, combined with a bare major
+    // jump, clears the threshold: 40 + 3 + 10 = 53.
+    const result = scoreDependency({
+      jump: "major",
+      deprecated: false,
+      declared: true,
+      usage: usage({ files: ["a.ts"], symbols: [], namespaceImport: true }),
+    });
+
+    expect(component(result, "jump")).toBe(40);
+    expect(component(result, "files")).toBe(3);
+    expect(component(result, "namespace")).toBe(10);
+    expect(result.score).toBe(53);
+    expect(result.band).toBe("urgent");
+  });
+
+  it("just under the urgent boundary: major(40) + files(3) + 3 symbols(6) = 49 stays \"review\"", () => {
+    // Same major jump and the same unavoidable 1-file minimum as the route above,
+    // but the breadth signal is symbols instead of a namespace import — one point
+    // short of 50: 40 + 3 + 6 = 49.
+    const result = scoreDependency({
+      jump: "major",
+      deprecated: false,
+      declared: true,
+      usage: usage({ files: ["a.ts"], symbols: ["a", "b", "c"], namespaceImport: false }),
+    });
+
+    expect(component(result, "jump")).toBe(40);
+    expect(component(result, "files")).toBe(3);
+    expect(component(result, "symbols")).toBe(6);
+    expect(result.score).toBe(49);
+    expect(result.band).toBe("review");
+  });
+
   it("the breakdown never drifts: components summed then multiplied equals the reported total, across fixtures", () => {
     const fixtures = [
       scoreDependency({
